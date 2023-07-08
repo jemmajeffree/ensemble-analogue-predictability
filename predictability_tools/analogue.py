@@ -57,17 +57,27 @@ def pseudo_ensemble(initial_i,
     pick them out of the archive and reshape them to get an ensemble thing
     STILL ASSUMING THAT archive has a time dimension and everything else you want to keep.
     
-    initial_i: the indexes for start conditions in axis time
+    initial_i: the indexes for start conditions in axis time. Can be a numpy array (if there's no inherent coordinates to preserve), 
+               or a DataArray. If a DataArray, coordinates should be ('M',), or possibly ('M','Y'). It should cope okay with other coordinates, 
+               which will just be what the ensemble coordinates spit out, but it's better not to use 'time' if you're selecting from time
     archive: where the initial conditions (and the rest of the ensemble) come from
     lead_times: what lead times to consider. Positive ones mean after initial_i, (ie ENSO imapcts)
          negative ones mean before initial_i (ie ENSO precursors)
          '''
+    if type(initial_i) == np.ndarray:
+        initial_i = xr.DataArray(initial_i,dims='M')
+        
+    if not('M' in initial_i.dims):
+        warnings.warn('Look, you really ought to sort out your initial_i dimensions yourself (eg rename time to M) or who knows what will happen')
     
     # Lose the events that run off the start or end of the simulation
-    initial_i = initial_i.where(((initial_i+np.max(leads)<data.time.shape[0]) &
+    initial_i = initial_i.where(((initial_i+np.max(leads)<archive.time.shape[0]) &
                            (initial_i+np.min(leads)>0)),
                            drop=True).astype(int) 
-    return data.isel(time=initial_states+xr.DataArray(leads,dims='L')).rename({'time':'M'})
+    #print(archive.isel(time=initial_i+xr.DataArray(leads,dims='L')).dims)
+    #out = out.rename({'time':'M'}).assign_coords({'M': np.arange(M)})
+    
+    return archive.isel(time=initial_i+xr.DataArray(leads,dims='L')).assign_coords(L = leads)
 
 def analogue_ensemble(init_pca,
                     pca, 
@@ -103,18 +113,13 @@ def analogue_ensemble(init_pca,
                                    n_members,                                                       #this many of them
                                    weights=weights.isel(mode=mode_slice))
         
-        full_i = arg_month_year(pca,
-                                     nov_pca[time.year].isel(time=year_i),
-                                     initial_month)
-        
-        #nov_pca.time.isel(time=year_i)
-        
-        
-        #I can't find a better way to write this line
-        #full_i = xr.DataArray(np.where(np.isin(pca.time,start_times))[0],dims=('M'))
-        nearly_DPLE_i.append(pseudo_ensemble(initial_i,archive,lead_times))
+        full_i = arg_month_year(pca, #Now work out where those analogues came from originally
+                                     nov_pca['time.year'].isel(time=year_i),
+                                     initial_month,
+                                     ).rename({'time':'M'}) #We've selected times, but as ensemble members
+
+        nearly_DPLE_i.append(pseudo_ensemble(full_i,pca,lead_times))
     
     #Handing back the full pca rather than just the i, because it's less likely to be accidentally used wrong
-    #Shouldn't be much slower because it'll be lazy
-    return pca.isel(time=xr.concat(nearly_DPLE_i,'Y').assign_coords(L = lead_times))
+    return xr.concat(nearly_DPLE_i,'Y')
     
