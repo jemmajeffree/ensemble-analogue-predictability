@@ -3,6 +3,9 @@ import numpy as np
 import xarray as xr
 import warnings
 
+#This script builds off everything else
+from .statistics import *
+
 plt.rcParams.update({'font.size': 14})
 
 
@@ -17,6 +20,7 @@ def DJF_predictability(data, m_method, ylabel,
     ''' do m_method to data (preferably described by y label), and plot this.
         Also bootstrap a climatology out of data, and then apply m_method to this and plot it
         Use relative entropy to show how long the data stats are significantly different to climatology'''
+    warnings.warn('This is the function I fixed and then overwrote, so the statistical significance band is definitely buggy')
     
     '''CALCULATE NUMBERS'''
     #What the ensemble does

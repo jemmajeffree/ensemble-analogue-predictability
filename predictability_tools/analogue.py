@@ -24,13 +24,18 @@ def find_analogues(state, data, n,weights=None):
 
 def random_inits(pca,
                  n_years,
-                 start_month):
-    nov_pca = pca.where(np.isin(pca['time.month'],initial_month),drop=True)
+                 initial_month):
+    '''Randomly select n_years states from pca in the time dimension, limited
+    to only be in the months start_month
+    
+    Intended for use creating an analogue ensemble when you don't really care about initialisations'''
+    
+    nov_pca = pca.where(pca['time.month'].isin(initial_month),drop=True)
     years = np.random.choice(nov_pca['time.year'],n_years)
     
     return nov_pca.isel(time=years)
 
-def analog_ensemble(init_pca,
+def analogue_ensemble(init_pca,
                     pca, 
                     weights, 
                     n_members,
@@ -50,25 +55,27 @@ def analog_ensemble(init_pca,
     '''
                     
     #Initialise only from the same month to remove seasonality problems
-    nov_pca = pca.where(np.isin(pca['time.month'],initial_month),drop=True)
+    nov_pca = pca.where(pca['time.month'].isin(initial_month),drop=True)
     
     nearly_DPLE_i = []
     lead_increments = xr.DataArray(lead_times,dims=('L',))
     
+    init_pca = init_pca.transpose(...,'mode')
     for init in init_pca: 
-        year_i = pt.find_analogues(init.isel(mode=mode_slice), #find analogues for these years
+        year_i = find_analogues(init.isel(mode=mode_slice), #find analogues for these years
                                    nov_pca.isel(mode=mode_slice,time=slice(None,-max(lead_times))), #from these years
                                    n_members,                                                       #this many of them
                                    weights=weights.isel(mode=mode_slice))
         
         start_times = nov_pca.time.isel(time=year_i)
         
-        assert len(start_times.shape[0]) == 1, 'Not sure how this code will go with multidimensional analogues'
+        assert len(start_times.shape) == 1, 'Not sure how this code will go with multidimensional analogues'
         
         #I can't find a better way to write this line
         full_i = xr.DataArray(np.where(np.isin(pca.time,start_times))[0],dims=('M'))
         nearly_DPLE_i.append(full_i+lead_increments)
     
     #Handing back the full pca rather than just the i, because it's less likely to be accidentally used wrong
+    #Shouldn't be much slower because it'll be lazy
     return pca.isel(time=xr.concat(nearly_DPLE_i,'Y').assign_coords(L = lead_times))
     
