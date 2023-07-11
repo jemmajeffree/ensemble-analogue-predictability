@@ -65,7 +65,7 @@ def bootstrap_samples(data, n_samples, n_Y = 1, n_M = 40):
 def naive_stat_test(ens,
                        clim,
                        stat_test = lambda x,y: scipy.stats.ttest_ind(x,y).pvalue,
-                      chunk = {'nlon':64,'nlat':64}):
+                      chunk = {'nlon':64,'nlat':64,'L':-1}):
     
     '''Apply some stat test to ensemble, with a background of clim.
     For example, you might want to check the difference in means of the ensemble at some lead
@@ -96,7 +96,7 @@ def naive_stat_test(ens,
         # Could be slightly more efficient, but it runs in 2 seconds, where the stat test takes 2-20 minutes,
         #    so speed is not particularly important
         reshaped_clim = xr.concat(
-            [clim.groupby('time.month')[int(ens.isel(L=l).month)].drop_indexes('time') for l in ens.L],
+            [clim.groupby('time.month')[int(ens.sel(L=l).month)].drop_indexes('time') for l in ens.L],
              'L',
             coords='minimal',compat='override', #Ignore issues with time coordinate being reshapen
                           ).assign_coords({'L':ens.L})
@@ -105,7 +105,7 @@ def naive_stat_test(ens,
         reshaped_clim = clim.groupby('time.month')[int(ens.month)]
     
     return xr.apply_ufunc(stat_test,                          # Do this stat test
-               ens.chunk(chunk).chunk({'L':-1}),              # To these two DataArrays 
+               ens.chunk(chunk),                              # To these two DataArrays 
                reshaped_clim.chunk(chunk).chunk({'time':-1}), #     Chunked in space, but time needs grouping and L might be weird
                input_core_dims = [['M'],['time']],            # Leave the ensemble member and time dimensions on each, respectively
                vectorize=True,                                # But hand everything else to the stat test one at a time

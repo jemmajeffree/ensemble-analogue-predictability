@@ -1,3 +1,8 @@
+''' A place for generic graphs and plots that I make a lot of. 
+These can be less precise and generic than the rest of the library
+'''
+
+
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
@@ -15,12 +20,12 @@ def DJF_predictability(data, m_method, ylabel,
                         n_significance_samples = 256,
                         p_value = 0.99,
                         climatology = None,
-                        quantiles = (0.05,0.5,0.95)
+                        quantiles = (0.05,0.5,0.95),
                       ):
     ''' do m_method to data (preferably described by y label), and plot this.
         Also bootstrap a climatology out of data, and then apply m_method to this and plot it
         Use relative entropy to show how long the data stats are significantly different to climatology'''
-    warnings.warn('This is the function I fixed and then overwrote, so the statistical significance band is definitely buggy')
+    warnings.warn('This is the function I fixed and then accidenatlly overwrote with the old version, so the statistical significance band is definitely buggy')
     
     '''CALCULATE NUMBERS'''
     #What the ensemble does
@@ -81,3 +86,53 @@ def DJF_predictability(data, m_method, ylabel,
     plt.xlabel('lead time (months)')
     
     fig.subplots_adjust(hspace=0)
+    
+    
+def movie_images(stat,
+                 folder,
+                 title = '',
+                 clabel = '',
+                 cmap = 'viridis',
+                 movie_time_dim = 'L',
+                 vmin = None,
+                 vmax = None,
+                ):
+    
+    ''' Take some statistic which is 2D + time, and plot each timestep the merge them into a video'''
+
+    assert stat[movie_time_dim].shape[0]<1000, 'Only saving figures to 3 digits; can\'t handle more than 1000 leads'
+    assert folder[-1] == '/', 'folder should specify a directory'
+    
+    if not os.path.isdir(folder):
+        cont = input('Folder doesn\'t currently exist. Press enter to create or type anything to abort')
+        if cont == '':
+            os.mkdir(folder)
+        else:
+            return
+
+    if vmin is None:
+        vmin = np.min(stat)
+    if vmax is None:
+        vmax = np.max(stat)
+        
+    for i,l in enumerate(stat[movie_time_dim]):
+        plt.figure(figsize=(10,4))
+        ax = plt.axes()
+        plotdata = stat.sel({movie_time_dim:l})
+        plt.pcolormesh(plotdata,cmap=cmap,vmin=10**-5,vmax=1,norm='log')
+        cbar = plt.colorbar()
+        cbar.set_label(clabel)
+        ax.axis('off')
+        plt.title(title+'\n {:2d} months lead'.format(l))
+        plt.tight_layout()
+        plt.savefig(folder+'{:03d}.png'.format(i),dpi=200)
+        plt.close()
+        
+    (
+    ffmpeg
+        .input(folder+'%03d.png', framerate=10)
+        .output(folder+folder.split('/')[-2]+'.mp4', pix_fmt = 'yuv420p')
+        .run(overwrite_output=True)
+    )
+        
+    return
