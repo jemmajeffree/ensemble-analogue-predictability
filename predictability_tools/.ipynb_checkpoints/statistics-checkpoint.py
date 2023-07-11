@@ -61,3 +61,53 @@ def bootstrap_samples(data, n_samples, n_Y = 1, n_M = 40):
     l0 = xr.DataArray(np.random.choice(data.L,(n_M,n_Y,n_samples)),dims=('new_M','new_Y','sample'))
     
     return data.sel(L=l0,Y=y0,M=m0).rename({'new_M':'M','new_Y':'Y'})
+
+def naive_stat_test(ens,
+                       clim,
+                       stat_test = lambda x,y: scipy.stats.ttest_ind(x,y).pvalue,
+                      chunk = {'nlon':64,'nlat':64}):
+    
+    '''Apply some stat test to ensemble, with a background of clim.
+    For example, you might want to check the difference in means of the ensemble at some lead
+            and the climatology
+    Any raw test which I write would be much faster, but this can take any function which understands
+            a one dimensional ndarray in the place of stat test
+    All dimensions are hardcoded (sorry) and will remain that way until I work out
+        what sort of versatility is required
+    Currently assumes that you never want to mix up different months of year
+        (which took forever to write)
+    
+    ens: an ensemble, with dimensions M, L, [spacial dims]
+    clim: the climatology, with dimensions time, [spacial dims]
+    stat_test: ie lambda x,y: scipy.stats.ttest_ind(x,y).pvalue
+    chunk: How to cut up the data for parallelization. Needs to be something, or it'll try to do
+            everything on a single core. '''
+    
+    # Get a month for each lead time, rather than time.month sitting on (L,M)
+    # All ensemble members should start at the same month, because seasonality
+    assert np.all(ens['time.month'] == ens['time.month'].isel(M=0)), 'If your ensemble members are happening at different times of year rewrite this code'
+    new_m = ens['time.month'].isel(M=0).astype(int)
+    del new_m['time']
+    ens = ens.assign_coords({'month':new_m})
+    
+    if 'L' in ens.dims:
+        # Reshape the climatology so it can be iterated through/vectorized along dimension L, 
+        #    and every lead time gets the right month climatology
+        # Could be slightly more efficient, but it runs in 2 seconds, where the stat test takes 2-20 minutes,
+        #    so speed is not particularly important
+        reshaped_clim = xr.concat(
+            [clim.groupby('time.month')[int(ens.isel(L=l).month)].drop_indexes('time') for l in ens.L],
+             'L',
+            coords='minimal',compat='override', #Ignore issues with time coordinate being reshapen
+                          ).assign_coords({'L':ens.L})
+    else:
+        #If there's only one month, just grab the bit of clim that you need
+        reshaped_clim = clim.groupby('time.month')[int(ens.month)]
+    
+    return xr.apply_ufunc(stat_test,                          # Do this stat test
+               ens.chunk(chunk).chunk({'L':-1}),              # To these two DataArrays 
+               reshaped_clim.chunk(chunk).chunk({'time':-1}), #     Chunked in space, but time needs grouping and L might be weird
+               input_core_dims = [['M'],['time']],            # Leave the ensemble member and time dimensions on each, respectively
+               vectorize=True,                                # But hand everything else to the stat test one at a time
+               dask='parallelized',                           # Use different cores for each stat test, please
+              ) 
