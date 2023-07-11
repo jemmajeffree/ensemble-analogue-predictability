@@ -33,7 +33,8 @@ def CESM_average_region(data, region, filename=None):
                       (data.TLONG<region[1]) & 
                       (data.TLAT>region[2]) & 
                       (data.TLAT<region[3]),
-                      drop = True).mean(('nlat','nlon')).load()
+                      #drop = True #Fails with more recent xarray, dunno why, but not important with the load straight after
+                      ).mean(('nlat','nlon')).load()
     if not(filename is None):
         index.to_netcdf(filename)
     return index
