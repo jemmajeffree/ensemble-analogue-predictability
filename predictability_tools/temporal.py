@@ -52,4 +52,4 @@ def correct_cesm_date(x,time_dim = 'time'):
     if 'cesm_date_corrected' in x.attrs:
         warnings.warn('This data may have already been corrected for the cesm month thing, but you\'ve asked me to do it again. - Double check that this is what you want to do')
 
-    return x.assign_coords({time_dim:xr.apply_ufunc(fix_month, x[time_dim], vectorize=True)}).assign_attrs({'cesm_date_corrected':True})
+    return x.assign_coords({time_dim:xr.apply_ufunc(fix_month, x[time_dim], vectorize=True,dask='parallelized',output_dtypes=['object'])}).assign_attrs({'cesm_date_corrected':True})

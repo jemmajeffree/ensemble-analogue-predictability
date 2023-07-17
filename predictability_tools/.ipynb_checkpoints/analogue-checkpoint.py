@@ -19,6 +19,8 @@ def find_analogues(state, data, n,weights=None):
     #Euclidian distance/least square
     distance = ((state-data)**2*weights).sum('mode')
     
+    assert type(distance) is xr.DataArray, 'Stuff must come out to a DataArray (not Dataset) here'
+    
     #Earliest entries of argsort are the smallest values
     return distance.argsort()[:n].data
 
@@ -109,7 +111,7 @@ def analogue_ensemble(init_pca,
         assert len(init.shape) == 1, 'Not sure how this code will go with multidimensional analogues'
         
         year_i = find_analogues(init.isel(mode=mode_slice), #find analogues for this year
-                                   nov_pca.isel(mode=mode_slice,time=slice(None,-max(lead_times))), #from these years
+                                   nov_pca.isel(mode=mode_slice,time=slice(None,nov_pca.time.shape[0]-max(lead_times))), #from these years
                                    n_members,                                                       #this many of them
                                    weights=weights.isel(mode=mode_slice))
         
