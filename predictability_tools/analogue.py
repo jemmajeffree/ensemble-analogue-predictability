@@ -69,7 +69,7 @@ def pseudo_ensemble(initial_i,
     if type(initial_i) == np.ndarray:
         initial_i = xr.DataArray(initial_i,dims='M')
         
-    if not('M' in initial_i.dims):
+    if not('M' in initial_i.dims) and ('time' in initial_i.dims):
         warnings.warn('Look, you really ought to sort out your initial_i dimensions yourself (eg rename time to M) or who knows what will happen')
     
     # Lose the events that run off the start or end of the simulation
