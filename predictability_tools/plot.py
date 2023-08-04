@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 import warnings
+from xhistogram.xarray import histogram
 
 #This script builds off everything else
 from .statistics import *
@@ -136,3 +137,83 @@ def movie_images(stat,
     )
         
     return
+
+def rank_histogram(rank,rank_min = None, rank_max = None,bin_width = 1):
+    ''' Make a histogram from rank data. I'm not entirely certain why I decided this needed
+    it's own function, but here we are'''
+        
+    if rank_min is None:
+        rank_min = np.min(rank)
+    if rank_max is None:
+        rank_max = np.max(rank)
+    bins = np.arange(rank_min-0.5,rank_max+1.5,bin_width)
+    
+    hist_data = histogram(rank,dim='Y',bins=bins,density=True)
+    plt.bar((bins[1:]+bins[:-1])/2,
+            hist_data,width=bin_width-0.1)
+    return hist_data
+
+def analogue_goodness(this_obs,
+                          this_ens,
+                           title):
+    
+    n_members = this_ens.M.shape[0]
+    fig, axs = plt.subplots(2,2,figsize=(8,8))
+    plt.suptitle(title)
+    
+    axs[0,0].axis('off')
+    axs[0,0].text(0.1,0.5,'R$^2$ ='+str(round(float(R2(this_obs,this_ens.mean('M'))),3)),size=22,alpha=0.8)
+    axs[0,0].set_title('a) Predictive skill', fontsize=12, loc='left')
+    
+    plt.sca(axs[0,1])
+    #plt.title('R$^2$ '+str(round(float(R2(this_obs,this_ens.mean('M'))),3)))
+    plt.scatter(this_obs,this_ens.mean('M'))
+    plt.plot(this_obs.quantile((0,1)),this_obs.quantile((0,1)),c='k',linewidth=3,alpha=0.5)
+    plt.ylabel('prediction')
+    plt.xlabel('validation')
+
+    
+    
+    plt.sca(axs[1,0])
+    rank_histogram(rank_obs(this_obs,this_ens))
+    plt.xlim(-0.5,n_members+0.5)
+    plt.plot((-1,n_members+1),np.ones(2)/(n_members+1),c='k',linewidth=3,alpha=0.5)
+    plt.xlabel('rank',fontsize=12)
+    plt.ylabel('frequency',fontsize=12)
+
+    
+    
+    plt.sca(axs[1,1])
+    x = np.arange(1,n_members+2)
+    legit_dist = np.linspace(0,1,n_members+2)[1:]
+    legit_dist[:-1] -=0.5/(n_members) #A uniform distribution losing the tails slightlys
+    
+    hist_data = histogram(rank_obs(this_obs,this_ens),dim='Y',bins=np.arange(-0.5,n_members+1.5,1),density=True)
+    
+    plt.plot(x,hist_data.cumsum('rank_bin'),linestyle='dashed',marker='.',linewidth=0.5,zorder=4)
+    KS_test_stat = np.max(np.abs(legit_dist-hist_data.cumsum('rank_bin').data))
+    plt.plot(x,legit_dist,c='k',linewidth=2,alpha=0.3)
+    axs[1,1].text(1,0.75,str(round(float(KS_test_stat),3)),size=16,alpha=0.8)
+   
+    plt.xlabel('rank',fontsize=12)
+    plt.ylabel('cumulative frequency',fontsize=12)
+    
+    #Don't think is right
+#     if(KS_test_stat<scipy.stats.kstwo.ppf((0.01),n_members+1)):
+#         axs[1,1].text(1,0.75,'KS ='+str(round(float(KS_test_stat),3))+'\n insig. diff',size=16,alpha=0.8)
+#     else:
+#         axs[1,1].text(1,0.75,'KS ='+str(round(float(KS_test_stat),3))+'\n sig. diff',size=16,alpha=0.8)
+
+    quant_dist = rank_obs(this_obs,this_ens).quantile((0,0.25,0.75,1)).diff('quantile')
+    dispersion = (quant_dist[1]-quant_dist[0]-quant_dist[2])/n_members
+    
+    
+    std = rank_obs(this_obs,this_ens).var()
+    uniform_std = np.concatenate((np.arange(n_members),np.arange(1,n_members+1))).var()
+    #print(std,uniform_std)
+    #print('overdispersion (variance):   '+str(round(float((uniform_std-std)/uniform_std)*100,0))+'%')
+    plt.title('overdispersion (quartiles): '+str(round(-float(dispersion)*100,0))+'%\n'
+             +'overdispersion (variance): '+str(round(float((uniform_std-std)/uniform_std)*100,0))+'%',fontsize=12)
+    
+        
+    plt.subplots_adjust(hspace=0.5,wspace=0.45)

@@ -3,6 +3,12 @@ import xarray as xr
 import warnings
 import scipy.stats
 
+
+def R2(x_pred,x,dim='Y'):
+    ''' Coefficient of determination
+    x, x_pred'''
+    return 1-((x-x_pred)**2).sum(dim)/((x)**2).sum(dim)
+
 def relative_entropy(ensemble, climatology, mean_var_c = None, dim_e = 'Y',dim_c = 'Y'): 
     '''Calculate the relative entropy between ensemble and climatology pdfs 
     from just the mean and std terms, after Fang et al 2022 JClim
@@ -111,3 +117,34 @@ def naive_stat_test(ens,
                vectorize=True,                                # But hand everything else to the stat test one at a time
                dask='parallelized',                           # Use different cores for each stat test, please
               ) 
+
+def rank_obs(obs,ens):
+    ''' Take some observations (obs) and see where they fit into an ensemble (ens).
+    obs has dimensions (Y,L) -- Year/initialization and lead time after that initialization
+    ens has dimesnsions (Y,M,L) -- Year/initialization, ensemble member (analogue number) and lead time
+    
+    Returns the rank of each observation - the number of ensemble members which are below it'''
+    
+    for d in obs.dims:
+        xr.testing.assert_equal(obs[d],ens[d])
+        
+    return (obs>ens).sum('M').rename('rank')
+
+def rank_obs_against_pred(obs,
+                          ens,
+                          pred=None):
+    ''' Take some observations (obs) and see where they fit into an ensemble (ens) relative to the actual prediction.
+    obs has dimensions (Y,L) -- Year/initialization and lead time after that initialization
+    ens has dimesnsions (Y,M,L) -- Year/initialization, ensemble member (analogue number) and lead time
+    
+    Returns the rank of each observation - the number of ensemble members which are below it
+    
+    I'm not convinced this function has any utility, because random spare analogues seem to impact mean and spread equally?'''
+    if pred is None:
+        pred = ens.mean('M')
+        
+    for d in obs.dims:
+        xr.testing.assert_equal(obs[d],ens[d])
+        xr.testing.assert_equal(pred[d],obs[d])
+    
+    return ((obs>ens).sum('M')-(pred>ens).sum('M')).rename('rank')

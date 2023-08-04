@@ -99,9 +99,19 @@ def analogue_ensemble(init_pca,
     lead_times: How far forwards/back you want those ensemble members
     mode_slice: How many modes of variability to bother using. Doesn't make much difference
     '''
-                    
+    
+    min_L = np.min(lead_times)
+    max_L = np.max(lead_times)
+    
+    #Trim the ends off:
+    trim_pca = pca
+    if min_L<0:
+        trim_pca = pca.isel(time=slice(-min_L,None))
+    if max_L>0:
+        trim_pca = pca.isel(time=slice(None,-max_L))
+    
     #Initialise only from the same month to remove seasonality problems
-    nov_pca = pca.where(pca['time.month'].isin(initial_month),drop=True)
+    nov_pca = trim_pca.where(pca['time.month'].isin(initial_month),drop=True)
     
     nearly_DPLE_i = []
     #lead_increments = xr.DataArray(lead_times,dims=('L',))
@@ -114,11 +124,10 @@ def analogue_ensemble(init_pca,
                                    nov_pca.isel(mode=mode_slice,time=slice(None,nov_pca.time.shape[0]-max(lead_times))), #from these years
                                    n_members,                                                       #this many of them
                                    weights=weights.isel(mode=mode_slice))
-        
         full_i = arg_month_year(pca, #Now work out where those analogues came from originally
                                      nov_pca['time.year'].isel(time=year_i),
                                      initial_month,
-                                     ).rename({'time':'M'}) #We've selected times, but as ensemble members
+                                     ).rename({'time':'M'}).assign_coords({'M':np.arange(n_members)}) #We've selected times, but as ensemble members
 
         nearly_DPLE_i.append(pseudo_ensemble(full_i,pca,lead_times))
     
