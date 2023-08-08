@@ -7,7 +7,7 @@ nino34_region = np.array((190,240,-5,5))
 nino3_region = np.array((210,270,-5,5))
 nino4_region = np.array((160,210,-5,5))
 wholeP_region = np.array((140,280,-5,5))
-pacific_mask = xr.open_dataarray('ensemble-analogue-predictability/ocean_basin_mask.nc').sel(region='Pacific Ocean')
+pacific_mask = xr.open_dataarray('/'.join(__file__.split('/')[:-2])+'/ocean_basin_mask.nc').sel(region='Pacific Ocean')
 
 '''All of these CESM functions can be generalised for other models, 
 or other data naming systems (ie CMORised), but I'll update them when I know what 

@@ -7,7 +7,8 @@ nino34_region = np.array((190,240,-5,5))
 nino3_region = np.array((210,270,-5,5))
 nino4_region = np.array((160,210,-5,5))
 wholeP_region = np.array((140,280,-5,5))
-#pacific_mask = xr.open_dataarray('./../ocean_basin_mask.nc').sel(region='Pacific Ocean')
+print('/'.join(__file__.split('/')[:-2])+'/ocean_basin_mask.nc')
+pacific_mask = xr.open_dataarray('/'.join(__file__.split('/')[:-2])+'/ocean_basin_mask.nc').sel(region='Pacific Ocean')
 
 '''All of these CESM functions can be generalised for other models, 
 or other data naming systems (ie CMORised), but I'll update them when I know what 
@@ -17,23 +18,30 @@ def dedrift(data):
     ''' Pretty self explanitory, and I'm not sure if I'll use it or the one liner'''
     return data-data.mean(('Y','M'))
 
-def CESM_average_region(data, region, filename=None):
-    '''Calculate the spacial average of CESM data over a box, 
+def declim(data,timedim='time'):
+    '''Strip a seasonally varying climatology from the data'''
+    return data.groupby(timedim+'.month')-data.groupby(timedim+'.month').mean()
+
+def average_region(data, region, filename=None,
+                        lon_coord = 'TLONG', lat_coord ='TLAT',lon_dim='nlon',lat_dim='nlat'):
+    '''Calculate the spacial average over a box, 
     and potentially write to filename
     i.e. calculate the NINO34 index given SST data and the NINO34 box
-        data is an xarray data array with CESM naming conventions
-        region is lon1, lon2, lat1, lat2 of the averaging region
+        data is an xarray data array
+        region is lon1, lon2, lat1, lat2 of the averaging region, 
+            in lon_coord and lat_coord (which sit on lon_dim and lat_dim)
         filename is optional dump path
 '''
     
-    assert np.all((data.TLONG>=0) & (data.TLONG<=360)) #Just check periodic coordinates
+    assert np.all((data[lon_coord]>=0) & (data[lon_coord]<=360) | np.isnan(data[lon_coord])) #Just check periodic coordinates
     assert np.all((region[:2]>=0) & (region[:2]<=360))
     
-    index = data.where((data.TLONG>region[0]) &
-                      (data.TLONG<region[1]) & 
-                      (data.TLAT>region[2]) & 
-                      (data.TLAT<region[3]),
-                      drop = True).mean(('nlat','nlon')).load()
+    index = data.where((data[lon_coord]>region[0]) &
+                      (data[lon_coord]<region[1]) & 
+                      (data[lat_coord]>region[2]) & 
+                      (data[lat_coord]<region[3]),
+                      #drop = True #Fails with more recent xarray, dunno why, but not important with the load straight after
+                      ).mean((lat_dim,lon_dim)).load()
     if not(filename is None):
         index.to_netcdf(filename)
     return index
@@ -93,40 +101,6 @@ def CESM_ELI(sst,sst_threshold, filename =None):
         
     return ELI
 
-def project_onto_EOF(data, eof, filename=None, space_dims = ('nlon','nlat'),time_dims = ('Y','L','M')):
-    ''' Calculating EOFs takes time and memory, and linear algebra is fast
-    This function linearly projects a dataset onto pre-calculated EOFs, which can be generated using a much smaller subset of the data, because 1000 years of control run are not needed to find the dominant eigenvectors.
-    
-    Does not remove seasonality (I'd recommend removing this, and drift or whatever, prior to projecting)
-    
-    data is an xarray data array of whatever you want to project
-    eof is an xarray data array with dimensions (spacial dims of data, mode)
-       - It has presumably been spat out by the eofs package, but it never hurts to try and stop yourself doing stupid things, so I'm insisting on the same dimensions being reapplied before using it for projection
-    '''
-    
-    #Set up linear algebra
-    A = eof.stack({'loc':space_dims}
-                 ).transpose('loc','mode').to_numpy()
-    mode_coord = eof.mode
-    
-    b = data.stack({'loc':space_dims,'time_stack':time_dims})
-    time_stack = b.time_stack
-    if np.sum(np.isnan(b))>0:
-        warnings.warn('Replacing nans with 0 before linear algebra. You ought to deal with them earlier though...')
-        b = b.fillna(0)
-    b = b.data
-    
-    #Actual projection
-    ataat = np.linalg.inv(A.T@A)@A.T
-    x = ataat@b
 
-    #Reassemble into xarray dataset
-    pca = xr.DataArray(x,dims=('mode','time_stack'),coords={'mode':eof.mode,
-                                                  'time_stack':time_stack}).unstack().rename('pca')
-
-    #Output
-    if not(filename is None):
-        pca.to_netcdf(filename)
-    return pca
 
 
