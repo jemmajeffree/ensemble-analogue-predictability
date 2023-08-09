@@ -3,6 +3,14 @@ import xarray as xr
 import warnings
 import cftime
 
+def dedrift(data):
+    ''' Pretty self explanitory, and I'm not sure if I'll use it or the one liner'''
+    return data-data.mean(('Y','M'))
+
+def declim(data,timedim='time'):
+    '''Strip a seasonally varying climatology from the data'''
+    return data.groupby(timedim+'.month')-data.groupby(timedim+'.month').mean()
+
 def DJF_mean(x):
     warnings.warn('Old DJF_mean, perhaps switch to using seasonal_mean?')
     return x.rolling({'L':3},center=True).mean().sel(L=np.arange(10)*12+2)
