@@ -37,6 +37,22 @@ def random_inits(pca,
     
     return nov_pca.isel(time=years)
 
+def arg_sel(archive_time, times):
+    '''Use sel to find the indexes that belong to a specific set of times
+    I'm reasonably happy with this implementation -- it's quite clean, but
+    it's weird that it doesn't have a native way to do so
+    archive_time - the times that you're selecting from
+    time - the times that you want indexes for'''
+    
+    assert len(archive_time.shape) ==1 #Never hurts to hardcode your assumptions
+    time_indexes = xr.DataArray(np.arange(archive_time.shape[0]),
+                                coords={'time':archive_time},
+                               )
+    
+    #print(times[~np.isin(times,archive_time)])
+    return time_indexes.sel(time=times)#.data
+    
+
 def arg_month_year(archive_time,
                    years,
                    m,
@@ -49,6 +65,9 @@ def arg_month_year(archive_time,
     m: what month to look for in each year
     
     returns the indices needed to find those years/months in archive_time'''
+    
+    warnings.warn('Now defunct - Please fix code to use arg_sel instead, which is a neater and more generic implementation')
+    
     
     return xr.DataArray(np.where(archive_time['time.year'].isin(years) & (archive_time['time.month'] == m))[0],dims='time')
 
@@ -69,13 +88,16 @@ def pseudo_ensemble(initial_i,
     if type(initial_i) == np.ndarray:
         initial_i = xr.DataArray(initial_i,dims='M')
         
-    if not('M' in initial_i.dims):
+    if not('M' in initial_i.dims) and ('time' in initial_i.dims):
         warnings.warn('Look, you really ought to sort out your initial_i dimensions yourself (eg rename time to M) or who knows what will happen')
     
     # Lose the events that run off the start or end of the simulation
-    initial_i = initial_i.where(((initial_i+np.max(leads)<archive.time.shape[0]) &
-                           (initial_i+np.min(leads)>0)),
-                           drop=True).astype(int) 
+    if np.any(~((initial_i+np.max(leads)<archive.time.shape[0]) &
+                           (initial_i+np.min(leads)>=0))):
+        warnings.warn('Losing some analogues that run off the start/end of the simulation with lead time')
+        initial_i = initial_i.where(((initial_i+np.max(leads)<archive.time.shape[0]) &
+                               (initial_i+np.min(leads)>=0)),
+                               drop=True).astype(int) 
     #print(archive.isel(time=initial_i+xr.DataArray(leads,dims='L')).dims)
     #out = out.rename({'time':'M'}).assign_coords({'M': np.arange(M)})
     
@@ -88,6 +110,7 @@ def analogue_ensemble(init_pca,
                     initial_month = 11, #Should work with an array of months, but I haven't tested this functionality in detail
                     lead_times = np.arange(122),
                     mode_slice = slice(None,10), #How many EOFs to use. Pretty sure it doesn't matter much
+                    archive_time_mask = None,
                    ):
     '''Build a DPLE-style (dimension names etc) ensemble, based on the initial conditions suggested.
     
@@ -98,10 +121,28 @@ def analogue_ensemble(init_pca,
     initial_month: What months to select analogues from, to minimise seasonality issues
     lead_times: How far forwards/back you want those ensemble members
     mode_slice: How many modes of variability to bother using. Doesn't make much difference
+    archive_time_mask: A slice or boolean array of which times in the archive are okay to use
+                       default is to just slice off the start and end times that might be wanted for leads,
+                       but the world's your oyster
     '''
-                    
-    #Initialise only from the same month to remove seasonality problems
-    nov_pca = pca.where(pca['time.month'].isin(initial_month),drop=True)
+    
+    min_L = np.min(lead_times)
+    max_L = np.max(lead_times)
+    
+    if archive_time_mask is None:
+        archive_time_mask = xr.ones_like(pca.time, dtype=bool)
+    
+    #Trim the ends off, & trim away the months you don't want
+    trim_pca = pca.where(archive_time_mask &
+                        pca['time.month'].isin(initial_month))
+    if min_L<0:
+        trim_pca = trim_pca.isel(time=slice(-min_L,None))
+    if max_L>0:
+        trim_pca = trim_pca.isel(time=slice(None,-max_L))
+    
+    
+    #Throw away all the collated Nans from previous bits
+    archive = trim_pca.where(~np.isnan(trim_pca),drop=True)
     
     nearly_DPLE_i = []
     #lead_increments = xr.DataArray(lead_times,dims=('L',))
@@ -111,15 +152,20 @@ def analogue_ensemble(init_pca,
         assert len(init.shape) == 1, 'Not sure how this code will go with multidimensional analogues'
         
         year_i = find_analogues(init.isel(mode=mode_slice), #find analogues for this year
-                                   nov_pca.isel(mode=mode_slice,time=slice(None,nov_pca.time.shape[0]-max(lead_times))), #from these years
+                                   archive.isel(mode=mode_slice), #from these years
                                    n_members,                                                       #this many of them
                                    weights=weights.isel(mode=mode_slice))
+        #print(year_i)
+        #print(pca.time)
+        #print(archive.time.isel(time=year_i))
+        #
+        full_i = arg_sel(pca.time,archive.time.isel(time=year_i)).rename({'time':'M'}).assign_coords({'M':np.arange(n_members)})
         
-        full_i = arg_month_year(pca, #Now work out where those analogues came from originally
-                                     nov_pca['time.year'].isel(time=year_i),
-                                     initial_month,
-                                     ).rename({'time':'M'}) #We've selected times, but as ensemble members
-
+        #full_i = arg_month_year(pca, #Now work out where those analogues came from originally
+        #                             nov_pca['time.year'].isel(time=year_i),
+        #                             initial_month,
+        #                             ).rename({'time':'M'}).assign_coords({'M':np.arange(n_members)}) #We've selected times, but as ensemble members
+        #print(full_i)
         nearly_DPLE_i.append(pseudo_ensemble(full_i,pca,lead_times))
     
     #Handing back the full pca rather than just the i, because it's less likely to be accidentally used wrong

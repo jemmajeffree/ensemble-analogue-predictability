@@ -55,14 +55,17 @@ def prepare_for_eof(data,
             data = data.where(data[c]<stop,  drop=True)
         
     #Do some massaging for the EOFs package
-    data = data.rename({space_dims[0]:'latitude'}).stack({'longitude':space_dims[1:]})
+    if not (space_dims[0] == 'latitude'):
+        data = data.rename({space_dims[0]:'latitude'})
+    if not (space_dims[1:] =='longitude'):
+        data = data.stack({'longitude':space_dims[1:]})
     if len(time_dims) == 1:
         data = data.rename({time_dims[0]:'time'})
     else:
         data = data.stack({'time':time_dims})
     data = data.fillna(0)
     
-    return data
+    return data.transpose('time',...)
 
 def calculate_eof(eof_ready_data,
                   n_eofs,
@@ -99,11 +102,11 @@ def calculate_eof(eof_ready_data,
     for c in keep_coords:
         eof_xr = eof_xr.assign_coords({c:eof_ready_data[c].unstack()})
 
-    return eof_xr.rename({'latitude':'nlat'})
+    return eof_xr.rename({'latitude':lat_name})
 
 def trim_to_eof(ss,eof_stats, 
                 trim_dim = ('nlon','nlat','var',),
-                check_coord = ('TLONG','TLAT',)
+                check_coord = ('TLONG','TLAT',),
                 ):
     '''Take a bunch of data and some eofs that you want to project the data onto, and throw away all of
     the data which isn't a variable in the eofs

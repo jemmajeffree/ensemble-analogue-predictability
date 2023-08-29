@@ -7,20 +7,11 @@ nino34_region = np.array((190,240,-5,5))
 nino3_region = np.array((210,270,-5,5))
 nino4_region = np.array((160,210,-5,5))
 wholeP_region = np.array((140,280,-5,5))
-print('/'.join(__file__.split('/')[:-2])+'/ocean_basin_mask.nc')
 pacific_mask = xr.open_dataarray('/'.join(__file__.split('/')[:-2])+'/ocean_basin_mask.nc').sel(region='Pacific Ocean')
 
 '''All of these CESM functions can be generalised for other models, 
 or other data naming systems (ie CMORised), but I'll update them when I know what 
 else I'm working with and what's needed'''
-
-def dedrift(data):
-    ''' Pretty self explanitory, and I'm not sure if I'll use it or the one liner'''
-    return data-data.mean(('Y','M'))
-
-def declim(data,timedim='time'):
-    '''Strip a seasonally varying climatology from the data'''
-    return data.groupby(timedim+'.month')-data.groupby(timedim+'.month').mean()
 
 def average_region(data, region, filename=None,
                         lon_coord = 'TLONG', lat_coord ='TLAT',lon_dim='nlon',lat_dim='nlat'):

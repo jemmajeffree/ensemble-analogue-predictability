@@ -13,14 +13,6 @@ pacific_mask = xr.open_dataarray('/'.join(__file__.split('/')[:-2])+'/ocean_basi
 or other data naming systems (ie CMORised), but I'll update them when I know what 
 else I'm working with and what's needed'''
 
-def dedrift(data):
-    ''' Pretty self explanitory, and I'm not sure if I'll use it or the one liner'''
-    return data-data.mean(('Y','M'))
-
-def declim(data,timedim='time'):
-    '''Strip a seasonally varying climatology from the data'''
-    return data.groupby(timedim+'.month')-data.groupby(timedim+'.month').mean()
-
 def average_region(data, region, filename=None,
                         lon_coord = 'TLONG', lat_coord ='TLAT',lon_dim='nlon',lat_dim='nlat'):
     '''Calculate the spacial average over a box, 
