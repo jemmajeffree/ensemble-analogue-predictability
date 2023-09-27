@@ -109,7 +109,7 @@ def analogue_ensemble(init_pca,
                     n_members,
                     initial_month = 11, #Should work with an array of months, but I haven't tested this functionality in detail
                     lead_times = np.arange(122),
-                    mode_slice = slice(None,10), #How many EOFs to use. Pretty sure it doesn't matter much
+                    mode_slice = slice(None,10), #How many EOFs to use.
                     archive_time_mask = None,
                    ):
     '''Build a DPLE-style (dimension names etc) ensemble, based on the initial conditions suggested.

@@ -35,12 +35,12 @@ def seasonal_mean(x,season, remove_half_seasons = True):
         x = x.assign_coords({'time':xr.apply_ufunc(tweak_djf,x.time,vectorize=True)})
          
     if remove_half_seasons:
-        keep_years = ((x['time.season']==season).groupby('time.year').sum()==3)
+        keep_years = ((x['time.season']==season).groupby('time.year').sum('time')==3)
     else:
-        keep_years = np.ones_like((x['time.season']==season).groupby('time.year').sum(),dtype=bool)
+        keep_years = np.ones_like((x['time.season']==season).groupby('time.year').sum('time'),dtype=bool)
             
         
-    return x.where(x['time.season']==season).groupby('time.year').mean()[keep_years].rename({'year':'time.year'})
+    return x.where(x['time.season']==season).groupby('time.year').mean().transpose('year',...)[keep_years].rename({'year':'time.year'})
 
 def correct_cesm_date(x,time_dim = 'time'):
     '''Redo all the timestamps in x to be one month earlier, to fix the CESM problem about 

@@ -1,8 +1,9 @@
 import numpy as np
 import xarray as xr
 import warnings
+import os
 
-from .enso_indices import pacific_mask
+from .enso_indices import pacific_mask, regrid_pacific_mask
 
 #My local fork of the eofs package that can deal with multiindexes
 #That this mess is needed to import it is a little ridiculous
@@ -20,6 +21,7 @@ def prepare_for_eof(data,
                     time_dims = ('time',),
                     trim_coords = {'TLAT':slice(-10,10)},
                     trim_to_pacific = True,
+                    pacific_new_grid = None,
                    ):
     
     '''
@@ -44,7 +46,10 @@ def prepare_for_eof(data,
         
     #Subset data to the pacific
     if trim_to_pacific:
-        data = data.where(pacific_mask.astype(bool), drop =True)
+        if pacific_new_grid is None:
+            data = data.where(pacific_mask.astype(bool), drop =True)
+        else:
+            data = data.where(regrid_pacific_mask(pacific_new_grid).astype(bool), drop =True)
     
     #Subset data along whatever dimensions you want
     for c in trim_coords: #I suspect I'm only going to use this for TLAT, but it's here nonetheless
@@ -172,3 +177,164 @@ def redimensionalise(pca,eof):
     pca is something in the dimension space defined by eof_stats'''
     
     return (eof*pca).sum('mode')
+
+def loc_string(trim_to_pacific,
+               trim_coords,
+              var_list):
+    '''How to shove those three variables together consistently, for the sake of naming saved EOFs'''
+    return (str(trim_to_pacific)+'P_' +
+            '_'.join([str(trim_coords[k].start)+'_'+str(trim_coords[k].stop)+k for k in trim_coords])+
+            '_'+'_'.join(var_list))
+
+def calculate_weighted_eof(weighted_ss,
+                           trim_to_pacific,
+                           pacific_new_grid,
+                           trim_coords,
+                           weightfolder_name,
+                           data_name,
+                           space_dims=('nlon','nlat','var'),
+                           scaling_trim = {'nlat':0},
+                           keep_coords=('TLONG','TLAT'),
+                           n_modes=50):
+    ''' Take a dataset (ie model or observational sst or ssh) which has already been weighted grid-wise,
+    trim it down to the area you want, and EOF it. Save this EOF to file
+    
+    the weight multiplication happens outside this function because I think I can shave a factor of 2 
+    off by not doing it several times for different regions
+    
+    
+    weighted_ss       - whatever you want to EOF. This should have been multiplied by weights and
+                        temporally trimmed to a short-ish timeseries, possibly of only one month
+    trim_to_pacific   - boolean "do you want to exclude everything not Pacific"
+    trim_coords       - a dictionary of coordinates to trim the data before EOFing ie {'TLAT':slice(-10,10)}
+    weightfolder_name - Wherever you pulled the weights from, ideally 
+                        (ie /glade/.../pca_variations/correlation_weight/CESM2_DJF_NINO34_L10/)
+    data_name         - Name of the other part of weighted_ss (ie CESM2)    
+    n_modes           - how many EOFs to calculate. Even 50 is way under how much data you would have without
+                          dimension reduction
+                          '''
+    
+    
+    #Output path
+    folder = (weightfolder_name+'/'
+                +data_name+'_'
+                +loc_string(trim_to_pacific,trim_coords,weighted_ss['var'].data))
+    filename = (folder
+                +'/eof.nc'
+               )
+    
+    if not os.path.isdir(folder):
+        os.mkdir(folder)
+    
+    
+    eof_ready_data = prepare_for_eof(weighted_ss,
+                                        time_dims=('time',),
+                                        trim_to_pacific=trim_to_pacific,
+                                        pacific_new_grid = pacific_new_grid,
+                                        space_dims=space_dims,
+                                        trim_coords=trim_coords).squeeze()
+    eof_ready_data.load() #Can't do the EOF analysis with dask arrays, for some reason?
+    
+    eof = calculate_eof(eof_ready_data,
+                           n_modes,
+                        lat_name=space_dims[0],
+                        scaling_trim=scaling_trim,
+                        keep_coords=keep_coords)
+    
+    eof.to_netcdf(filename)
+    
+    return
+
+def calculate_weighted_pca(weighted_ss,
+                           eof_folder,
+                           data_name,
+                           n_modes=50,
+                           space_dims=('nlon','nlat','var'),
+                          time_dims = ('time',)):
+    ''' Take a dataset (ie model or observational sst or ssh) which has already been weighted grid-wise,
+    trim it down to the area you want, and EOF it. Save this EOF to file
+    
+    the weight multiplication happens outside this function because I think I can shave a factor of 2 
+    off by not doing it several times for different regions
+    
+    
+    weighted_ss       - whatever you want to EOF. This should have been multiplied by weights and
+                        temporally trimmed to a short-ish timeseries, possibly of only one month
+    eof_folder        - wherever the eof is (and, consequentially, wherever you want to put the pca)
+    data_name         - whatever weighted_ss contains, in addition to weights (ie. CESM2)
+    n_modes           - how many EOFs to calculate. Even 50 is way under how much data you would have without
+                          dimension reduction
+                          '''
+    
+    
+    #Output path
+    
+    eof = xr.load_dataset(eof_folder+'eof.nc')
+    
+    trim_model_ss = trim_to_eof(weighted_ss,eof.eof,trim_dim=space_dims)
+    
+    pca = project_onto_eof(trim_model_ss.squeeze()/eof.scaling,
+                                  eof.eof,
+                                  space_dims = space_dims,
+                                  time_dims=time_dims)
+    
+    pca.rename('pca').to_netcdf(eof_folder+'pca_'+data_name+'.nc')
+    
+def save_weighted_eof_set(ss,
+                           #weights,
+                           trim_to_pacific,
+                           pacific_new_grid,
+                           trim_coords,
+                           weightfolder_name,
+                           data_name,
+                           space_dims=('nlon','nlat','var'),
+                           scaling_trim={'nlat':0},
+                           n_modes=50):
+    ''' Take a dataset (ie model or observational sst or ssh) and multiply it by a set of weights,
+    then pass to a function to calculate the EOF and dump to file
+    
+    
+
+    ss                - whatever you want to EOF. Should be temporally trimmed
+    #weights           - The things you're multiplying data by (ie correlation maps)
+    trim_to_pacific   - A LIST OF boolean "do you want to exclude everything not Pacific"
+    trim_coords       - A LIST OF a dictionary of coordinates to trim the data before EOFing ie {'TLAT':slice(-10,10)}
+    weightfolder_name - Wherever you pulled the weights from, ideally 
+                        (ie /glade/.../pca_variations/correlation_weight/CESM2_DJF_NINO34_L10/)
+    data_name         - Name of the other part of weighted_ss (ie CESM2)    
+    n_modes           - how many EOFs to calculate. Even 50 is way under how much data you would have without
+                          dimension reduction
+                          '''
+    
+    weights = xr.load_dataarray(weightfolder_name+'weights.nc')
+    weighted_ss = (weights*ss).load().reset_coords('latitude',drop=True)
+    
+    assert type(trim_to_pacific) is list, 'need things to step through'
+    assert type(trim_coords) is list, 'need things to step through'
+    
+    for i in range(len(trim_to_pacific)):
+        
+        calculate_weighted_eof(weighted_ss.isel(time=slice(None,300)),
+                               trim_to_pacific = trim_to_pacific[i],
+                               pacific_new_grid = pacific_new_grid[i],
+                               trim_coords = trim_coords[i],
+                               weightfolder_name = weightfolder_name,
+                               scaling_trim=scaling_trim,
+                               data_name = data_name,
+                               n_modes=n_modes,
+                               space_dims=space_dims
+                              )
+        
+        eof_folder = (weightfolder_name+'/'
+                +data_name+'_'
+                +loc_string(trim_to_pacific[i],trim_coords[i],ss['var'].data)
+                +'/')
+        
+        calculate_weighted_pca(weighted_ss,
+                               eof_folder=eof_folder,
+                               data_name = data_name,
+                               n_modes=n_modes,
+                               space_dims=space_dims,
+                              )
+        
+        

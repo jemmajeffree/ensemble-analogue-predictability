@@ -4,4 +4,5 @@ from .temporal import *
 from .statistics import *
 from .eofs import *
 from . import plot #Saves me writing plot on the front of each function in here
+from .casper_data_reading import *
     

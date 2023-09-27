@@ -2,6 +2,11 @@ import numpy as np
 import xarray as xr
 import warnings
 
+import os
+#This is RIDICULOUS: Jupyter kernels don't initialise the environment properly
+os.environ['ESMFMKFILE'] ='/'.join(os.__file__.split('/')[:-2])+'/esmf.mk'
+import xesmf as xe
+
 
 nino34_region = np.array((190,240,-5,5))
 nino3_region = np.array((210,270,-5,5))
@@ -93,5 +98,11 @@ def CESM_ELI(sst,sst_threshold, filename =None):
     return ELI
 
 
+def regrid_pacific_mask(new_grid):
+    
+    grid_in = {'lon': pacific_mask.TLONG, 'lat': pacific_mask.TLAT}
 
+    RG = xe.Regridder(grid_in, new_grid, 'bilinear',ignore_degenerate=True,periodic=True) #Not sure why ignore_degenrate is needed here
+    #regrid
+    return RG(pacific_mask).astype(bool)
 
