@@ -3,6 +3,17 @@ import xarray as xr
 import warnings
 import scipy.stats
 
+
+def R2(x_pred,x,dim='Y'):
+    ''' Coefficient of determination
+    x, x_pred'''
+    return 1-((x-x_pred)**2).sum(dim)/((x)**2).sum(dim)
+
+def RMSE(x_pred,x,dim='Y'):
+    '''Root mean square error
+    '''
+    return ((x-x_pred)**2).mean(dim).sqrt()
+
 def relative_entropy(ensemble, climatology, mean_var_c = None, dim_e = 'Y',dim_c = 'Y'): 
     '''Calculate the relative entropy between ensemble and climatology pdfs 
     from just the mean and std terms, after Fang et al 2022 JClim
@@ -65,7 +76,7 @@ def bootstrap_samples(data, n_samples, n_Y = 1, n_M = 40):
 def naive_stat_test(ens,
                        clim,
                        stat_test = lambda x,y: scipy.stats.ttest_ind(x,y).pvalue,
-                      chunk = {'nlon':64,'nlat':64}):
+                      chunk = {'nlon':64,'nlat':64,'L':-1}):
     
     '''Apply some stat test to ensemble, with a background of clim.
     For example, you might want to check the difference in means of the ensemble at some lead
@@ -96,7 +107,7 @@ def naive_stat_test(ens,
         # Could be slightly more efficient, but it runs in 2 seconds, where the stat test takes 2-20 minutes,
         #    so speed is not particularly important
         reshaped_clim = xr.concat(
-            [clim.groupby('time.month')[int(ens.isel(L=l).month)].drop_indexes('time') for l in ens.L],
+            [clim.groupby('time.month')[int(ens.sel(L=l).month)].drop_indexes('time') for l in ens.L],
              'L',
             coords='minimal',compat='override', #Ignore issues with time coordinate being reshapen
                           ).assign_coords({'L':ens.L})
@@ -105,9 +116,40 @@ def naive_stat_test(ens,
         reshaped_clim = clim.groupby('time.month')[int(ens.month)]
     
     return xr.apply_ufunc(stat_test,                          # Do this stat test
-               ens.chunk(chunk).chunk({'L':-1}),              # To these two DataArrays 
+               ens.chunk(chunk),                              # To these two DataArrays 
                reshaped_clim.chunk(chunk).chunk({'time':-1}), #     Chunked in space, but time needs grouping and L might be weird
                input_core_dims = [['M'],['time']],            # Leave the ensemble member and time dimensions on each, respectively
                vectorize=True,                                # But hand everything else to the stat test one at a time
                dask='parallelized',                           # Use different cores for each stat test, please
               ) 
+
+def rank_obs(obs,ens):
+    ''' Take some observations (obs) and see where they fit into an ensemble (ens).
+    obs has dimensions (Y,L) -- Year/initialization and lead time after that initialization
+    ens has dimesnsions (Y,M,L) -- Year/initialization, ensemble member (analogue number) and lead time
+    
+    Returns the rank of each observation - the number of ensemble members which are below it'''
+    
+    for d in obs.dims:
+        xr.testing.assert_equal(obs[d],ens[d])
+        
+    return (obs>ens).sum('M').rename('rank')
+
+def rank_obs_against_pred(obs,
+                          ens,
+                          pred=None):
+    ''' Take some observations (obs) and see where they fit into an ensemble (ens) relative to the actual prediction.
+    obs has dimensions (Y,L) -- Year/initialization and lead time after that initialization
+    ens has dimesnsions (Y,M,L) -- Year/initialization, ensemble member (analogue number) and lead time
+    
+    Returns the rank of each observation - the number of ensemble members which are below it
+    
+    I'm not convinced this function has any utility, because random spare analogues seem to impact mean and spread equally?'''
+    if pred is None:
+        pred = ens.mean('M')
+        
+    for d in obs.dims:
+        xr.testing.assert_equal(obs[d],ens[d])
+        xr.testing.assert_equal(pred[d],obs[d])
+    
+    return ((obs>ens).sum('M')-(pred>ens).sum('M')).rename('rank')

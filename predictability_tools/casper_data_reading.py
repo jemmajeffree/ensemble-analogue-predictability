@@ -4,10 +4,6 @@ import numpy as np
 
 
 def get_CESM2_ss():
-    try:              ### DO NOT TRY TO RUN THIS CELL WITH A DASK CLUSTER! I mean it.
-        client.close()# it takes for ever, uses way too much memory and then kills the kernel
-    except:
-        pass
 
     ## CHECK UNITS
     model_sst = correct_cesm_date(xr.open_mfdataset(

@@ -42,7 +42,11 @@ def arg_sel(archive_time, times):
     I'm reasonably happy with this implementation -- it's quite clean, but
     it's weird that it doesn't have a native way to do so
     archive_time - the times that you're selecting from
-    time - the times that you want indexes for'''
+    time - the times that you want indexes for
+    return i of times in archive_time
+    ie archive_time.argsel(time=times)
+    
+    '''
     
     assert len(archive_time.shape) ==1 #Never hurts to hardcode your assumptions
     time_indexes = xr.DataArray(np.arange(archive_time.shape[0]),

@@ -58,8 +58,25 @@ def prepare_for_eof(data,
             data = data.where(data[c]>start, drop=True)
         if not (stop  is None):
             data = data.where(data[c]<stop,  drop=True)
+            
+#    # I suggest the alternative subsetting technique, because it'll work for longitude as well
+#    for c in trim_coords: #I suspect I'm only going to use this for TLAT, but it's here nonetheless
+#        start, stop = (trim_coords[c].start, trim_coords[c].stop)
+#        if start is None:
+#            start = -365
+#        if stop is None:
+#            stop = 365
+#        if start<stop:
+#            data = data.where((data[c]>start) & (data[c]<stop), drop=True)
+#        else:
+#            data = data.where((data[c]>start) | (data[c]<stop), drop=True)
         
     #Do some massaging for the EOFs package
+    if 'latitude' in data.coords:
+        data = data.rename({'latitude':'orig_latitude_coord'})
+    if 'longitude' in data.coords:
+        data = data.rename({'longitude':'orig_longitude_coord'}) #### CHECK AND FIX!!!!
+        
     if not (space_dims[0] == 'latitude'):
         data = data.rename({space_dims[0]:'latitude'})
     if not (space_dims[1:] =='longitude'):
@@ -74,7 +91,7 @@ def prepare_for_eof(data,
 
 def calculate_eof(eof_ready_data,
                   n_eofs,
-                  lat_name = 'nlat', #Probably always the case
+                  lat_name = 'nlat',
                   keep_coords = ('TLONG','TLAT'),
                   scaling_trim = {'nlon':0}, #Cheat's dimension reduction
                  ):
@@ -104,10 +121,28 @@ def calculate_eof(eof_ready_data,
                      'scaling':scaling
                     })
     
+    eof_xr = eof_xr.rename({'latitude':lat_name})
+    
+    if 'orig_latitude_coord' in eof_xr.coords:
+        eof_xr = eof_xr.rename({'orig_latitude_coord':'latitude','orig_longitude_coord':'longitude'})
+     
+    
     for c in keep_coords:
-        eof_xr = eof_xr.assign_coords({c:eof_ready_data[c].unstack()})
+        if c == 'latitude':
+            eof_xr = eof_xr.assign_coords({c:(eof_ready_data['orig_latitude_coord']
+                                              .unstack()
+                                              .rename({'latitude':lat_name})
+                                              .rename({'orig_latitude_coord':'latitude','orig_longitude_coord':'longitude'}))})
+        elif c == 'longitude':
+            eof_xr = eof_xr.assign_coords({c:(eof_ready_data['orig_longitude_coord']
+                                              .unstack()
+                                              .rename({'latitude':lat_name})
+                                              .rename({'orig_latitude_coord':'latitude','orig_longitude_coord':'longitude'}))})
+        else:
+            eof_xr = eof_xr.assign_coords({c:eof_ready_data[c].unstack().rename({'latitude':lat_name})})
+    
 
-    return eof_xr.rename({'latitude':lat_name})
+    return eof_xr
 
 def trim_to_eof(ss,eof_stats, 
                 trim_dim = ('nlon','nlat','var',),
@@ -192,8 +227,8 @@ def calculate_weighted_eof(weighted_ss,
                            trim_coords,
                            weightfolder_name,
                            data_name,
-                           space_dims=('nlon','nlat','var'),
-                           scaling_trim = {'nlat':0},
+                           space_dims=('nlat','nlon','var'),
+                           scaling_trim = {'nlon':0},
                            keep_coords=('TLONG','TLAT'),
                            n_modes=50):
     ''' Take a dataset (ie model or observational sst or ssh) which has already been weighted grid-wise,
@@ -247,9 +282,10 @@ def calculate_weighted_eof(weighted_ss,
 
 def calculate_weighted_pca(weighted_ss,
                            eof_folder,
-                           data_name,
+                           data_name, #Data being projected!!
                            n_modes=50,
                            space_dims=('nlon','nlat','var'),
+                           keep_coords = ('TLONG','TLAT'),
                           time_dims = ('time',)):
     ''' Take a dataset (ie model or observational sst or ssh) which has already been weighted grid-wise,
     trim it down to the area you want, and EOF it. Save this EOF to file
@@ -263,7 +299,7 @@ def calculate_weighted_pca(weighted_ss,
     eof_folder        - wherever the eof is (and, consequentially, wherever you want to put the pca)
     data_name         - whatever weighted_ss contains, in addition to weights (ie. CESM2)
     n_modes           - how many EOFs to calculate. Even 50 is way under how much data you would have without
-                          dimension reduction
+                          dimension reduction (looks like it's not used? so maybe doesn't need to be here?)
                           '''
     
     
@@ -271,7 +307,9 @@ def calculate_weighted_pca(weighted_ss,
     
     eof = xr.load_dataset(eof_folder+'eof.nc')
     
-    trim_model_ss = trim_to_eof(weighted_ss,eof.eof,trim_dim=space_dims)
+    trim_model_ss = trim_to_eof(weighted_ss,eof.eof,
+                                trim_dim=space_dims,
+                               check_coord=keep_coords)
     
     pca = project_onto_eof(trim_model_ss.squeeze()/eof.scaling,
                                   eof.eof,
@@ -287,6 +325,7 @@ def save_weighted_eof_set(ss,
                            trim_coords,
                            weightfolder_name,
                            data_name,
+                           keep_coords = ('TLAT','TLONG'),
                            space_dims=('nlon','nlat','var'),
                            scaling_trim={'nlat':0},
                            n_modes=50):
@@ -307,7 +346,7 @@ def save_weighted_eof_set(ss,
                           '''
     
     weights = xr.load_dataarray(weightfolder_name+'weights.nc')
-    weighted_ss = (weights*ss).load().reset_coords('latitude',drop=True)
+    weighted_ss = (weights*ss).load()
     
     assert type(trim_to_pacific) is list, 'need things to step through'
     assert type(trim_coords) is list, 'need things to step through'
@@ -322,7 +361,8 @@ def save_weighted_eof_set(ss,
                                scaling_trim=scaling_trim,
                                data_name = data_name,
                                n_modes=n_modes,
-                               space_dims=space_dims
+                               space_dims=space_dims,
+                               keep_coords=keep_coords,
                               )
         
         eof_folder = (weightfolder_name+'/'
@@ -335,6 +375,7 @@ def save_weighted_eof_set(ss,
                                data_name = data_name,
                                n_modes=n_modes,
                                space_dims=space_dims,
+                               keep_coords=keep_coords,
                               )
         
         

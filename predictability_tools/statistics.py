@@ -9,6 +9,11 @@ def R2(x_pred,x,dim='Y'):
     x, x_pred'''
     return 1-((x-x_pred)**2).sum(dim)/((x)**2).sum(dim)
 
+def RMSE(x_pred,x,dim='Y'):
+    '''Root mean square error
+    '''
+    return ((x-x_pred)**2).mean(dim).sqrt()
+
 def relative_entropy(ensemble, climatology, mean_var_c = None, dim_e = 'Y',dim_c = 'Y'): 
     '''Calculate the relative entropy between ensemble and climatology pdfs 
     from just the mean and std terms, after Fang et al 2022 JClim
