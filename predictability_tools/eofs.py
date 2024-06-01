@@ -2,6 +2,8 @@ import numpy as np
 import xarray as xr
 import warnings
 import os
+import copy
+import time
 
 from .enso_indices import pacific_mask, regrid_pacific_mask
 
@@ -82,9 +84,16 @@ def prepare_for_eof(data,
     if not (space_dims[1:] =='longitude'):
         data = data.stack({'longitude':space_dims[1:]})
     if len(time_dims) == 1:
-        data = data.rename({time_dims[0]:'time'})
+        if time_dims[0] != 'time':
+            data = data.rename({time_dims[0]:'time'})
     else:
-        data = data.stack({'time':time_dims})
+        if 'time' in time_dims:
+            data = data.rename({'time':'orig_time'}) #Updated 20/12/23 to address SMILEs
+            new_time_dims = list(copy.copy(time_dims))
+            new_time_dims[new_time_dims.index('time')] = 'orig_time'
+            data = data.stack({'time':new_time_dims})
+        else:
+            data = data.stack({'time':time_dims})
     data = data.fillna(0)
     
     return data.transpose('time',...)
@@ -114,7 +123,7 @@ def calculate_eof(eof_ready_data,
     total_variance = solver.totalAnomalyVariance()
     
     eof_xr = xr.Dataset({'eof':eof.unstack(),
-                     'pca':pca,
+                     'pca':pca.unstack(), #Updated 20/12/23 for SMILEs
                      'variance_fraction':variance_fraction,
                      'variance_fraction_error':variance_fraction_error,
                      'total_variance':total_variance,
@@ -125,6 +134,9 @@ def calculate_eof(eof_ready_data,
     
     if 'orig_latitude_coord' in eof_xr.coords:
         eof_xr = eof_xr.rename({'orig_latitude_coord':'latitude','orig_longitude_coord':'longitude'})
+    
+    if 'orig_time' in eof_xr.coords:
+        eof_xr = eof_xr.rename({'orig_time':'time'}) #Added 20/12/23 for SMILEs
      
     
     for c in keep_coords:
@@ -139,6 +151,7 @@ def calculate_eof(eof_ready_data,
                                               .rename({'latitude':lat_name})
                                               .rename({'orig_latitude_coord':'latitude','orig_longitude_coord':'longitude'}))})
         else:
+            print(c,eof_ready_data[c])
             eof_xr = eof_xr.assign_coords({c:eof_ready_data[c].unstack().rename({'latitude':lat_name})})
     
 
@@ -217,6 +230,7 @@ def loc_string(trim_to_pacific,
                trim_coords,
               var_list):
     '''How to shove those three variables together consistently, for the sake of naming saved EOFs'''
+
     return (str(trim_to_pacific)+'P_' +
             '_'.join([str(trim_coords[k].start)+'_'+str(trim_coords[k].stop)+k for k in trim_coords])+
             '_'+'_'.join(var_list))
@@ -230,6 +244,7 @@ def calculate_weighted_eof(weighted_ss,
                            space_dims=('nlat','nlon','var'),
                            scaling_trim = {'nlon':0},
                            keep_coords=('TLONG','TLAT'),
+                           time_dims = ('time',),
                            n_modes=50):
     ''' Take a dataset (ie model or observational sst or ssh) which has already been weighted grid-wise,
     trim it down to the area you want, and EOF it. Save this EOF to file
@@ -239,7 +254,7 @@ def calculate_weighted_eof(weighted_ss,
     
     
     weighted_ss       - whatever you want to EOF. This should have been multiplied by weights and
-                        temporally trimmed to a short-ish timeseries, possibly of only one month
+                        temporally trimmed to a short-ish timeseries, possibly of only one calendar month
     trim_to_pacific   - boolean "do you want to exclude everything not Pacific"
     trim_coords       - a dictionary of coordinates to trim the data before EOFing ie {'TLAT':slice(-10,10)}
     weightfolder_name - Wherever you pulled the weights from, ideally 
@@ -263,11 +278,63 @@ def calculate_weighted_eof(weighted_ss,
     
     
     eof_ready_data = prepare_for_eof(weighted_ss,
-                                        time_dims=('time',),
+                                        time_dims=time_dims,
                                         trim_to_pacific=trim_to_pacific,
                                         pacific_new_grid = pacific_new_grid,
                                         space_dims=space_dims,
                                         trim_coords=trim_coords).squeeze()
+    eof_ready_data.load() #Can't do the EOF analysis with dask arrays, for some reason?
+    
+    eof = calculate_eof(eof_ready_data,
+                           n_modes,
+                        lat_name=space_dims[0],
+                        scaling_trim=scaling_trim,
+                        keep_coords=keep_coords)
+    
+    eof.to_netcdf(filename)
+    
+    return
+
+def calculate_trimmed_weighted_eof(weighted_ss,
+                           weightfolder_name,
+                           data_name,
+                           space_dims=('nlat','nlon','var'),
+                           scaling_trim = {'nlon':0},
+                           keep_coords=('TLONG','TLAT'),
+                           time_dims = ('time',),
+                           n_modes=50):
+    ''' Take a dataset (ie model or observational sst or ssh) which has already been weighted grid-wise and trimmed, and EOF it. Save this EOF to file.
+    Same as above function, except the trimming is expected to be outside
+    
+    
+    weighted_ss       - whatever you want to EOF. This should have been multiplied by weights and
+                        temporally trimmed to a short-ish timeseries, possibly of only one calendar month
+    weightfolder_name - Wherever you pulled the weights from, ideally 
+                        (ie /glade/.../pca_variations/correlation_weight/CESM2_DJF_NINO34_L10/)
+    data_name         - Name of the other part of weighted_ss (ie CESM2-LE)    
+    n_modes           - how many EOFs to calculate. Even 50 is way under how much data you would have without
+                          dimension reduction
+                          '''
+    
+    
+    #Output path
+    folder = (weightfolder_name+'/'
+                +data_name+'_'
+                +'_'.join(weighted_ss['var'].data))
+    filename = (folder
+                +'/eof.nc'
+               )
+    
+    if not os.path.isdir(folder):
+        os.mkdir(folder)
+    
+    
+    eof_ready_data = prepare_for_eof(weighted_ss,
+                                        time_dims=time_dims,
+                                        trim_to_pacific= False,
+                                        pacific_new_grid = None,
+                                        space_dims=space_dims,
+                                        trim_coords={}).squeeze()
     eof_ready_data.load() #Can't do the EOF analysis with dask arrays, for some reason?
     
     eof = calculate_eof(eof_ready_data,
@@ -304,7 +371,7 @@ def calculate_weighted_pca(weighted_ss,
     
     
     #Output path
-    
+    t0 = time.time()
     eof = xr.load_dataset(eof_folder+'eof.nc')
     
     trim_model_ss = trim_to_eof(weighted_ss,eof.eof,
@@ -317,6 +384,61 @@ def calculate_weighted_pca(weighted_ss,
                                   time_dims=time_dims)
     
     pca.rename('pca').to_netcdf(eof_folder+'pca_'+data_name+'.nc')
+    
+
+def fast_calculate_weighted_pca(b,
+                           eof_folder,
+                           data_name, #Data being projected!!
+                           space_dims=('nlon','nlat','var'),
+                           keep_coords = ('TLONG','TLAT'),
+                          time_dims = ('time',),
+                               nan_warning = True):
+    ''' Take a dataset (ie model or observational sst or ssh) which has already been weighted grid-wise,
+    trim it down to the area you want, and EOF it. Save this EOF to file
+    
+    this has been optimised for casper, which probably has problems with memory, and so it might not be
+    as good on another system. Basically, I spent a whole day getting all the "where" and "stack" operations
+    out of the innermost for loop
+    
+    
+    weighted_ss       - whatever you want to EOF. This should have been multiplied by weights and
+                        temporally trimmed to a short-ish timeseries, possibly of only one month
+    eof_folder        - wherever the eof is (and, consequentially, wherever you want to put the pca)
+    data_name         - whatever weighted_ss contains, in addition to weights (ie. CESM2-LE_30P30I_0-10M)
+                          '''
+    
+    
+    #Output path
+    eof = xr.load_dataset(eof_folder+'eof.nc')
+    
+    #Rescale according to eof (all other b modification happens a loop level up)
+    b = b.squeeze()/eof.scaling.broadcast_like(b.isel(time_stack=0).unstack()).stack({'loc':space_dims})
+        
+    #Set up linear algebra
+    A = eof.eof.stack({'loc':space_dims}
+                 ).transpose('loc','mode').to_numpy()
+    mode_coord = eof.mode
+    
+    time_stack = b.time_stack
+    
+    if (np.sum(np.isnan(b))>0):
+        if nan_warning:
+            warnings.warn('Replacing nans with 0 before linear algebra. You ought to deal with them earlier though...')
+        b = b.fillna(0)
+
+    b = b.data
+    
+    #Actual projection
+    ataat = np.linalg.inv(A.T@A)@A.T
+    x = ataat@b
+    
+    #Reassemble into xarray dataset
+    pca = xr.DataArray(x,dims=('mode','time_stack'),coords={'mode':eof.mode,
+                                                  'time_stack':time_stack}).unstack().rename('pca')
+    
+    pca.rename('pca').to_netcdf(eof_folder+'pca_'+data_name+'.nc')
+
+    
     
 def save_weighted_eof_set(ss,
                            #weights,

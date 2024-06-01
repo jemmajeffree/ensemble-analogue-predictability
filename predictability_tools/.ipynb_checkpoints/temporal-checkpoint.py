@@ -9,7 +9,56 @@ def dedrift(data):
 
 def declim(data,timedim='time'):
     '''Strip a seasonally varying climatology from the data'''
+    warnings.warn('Screwing up the chunking; use strip_climatology')
     return data.groupby(timedim+'.month')-data.groupby(timedim+'.month').mean()
+
+def strip_climatology(ds, 
+                      clim = None, 
+                      time_dim = 'time',
+                      seasonal_dim = 'month',
+                     ):
+    '''
+    Removes the climatology/seasonal variation of a dataset. This function should 
+    return the same as ds.groupby('time.month')-ds.groupby('time.month').mean(),
+    but it does so without rechunking in the time dimension, and in some instances
+    can be 100x faster
+
+    Parameters
+    ----------
+    ds : xr.DataArray 
+        dataarray to remove climatology from
+        (probably works with a xr.Dataset, but I haven't tested this functionality rigourously
+    clim : None or xr.DataArray
+        climatology of dataset, if already calculated
+    time_dim : str
+        dimension over which to calculate the climatology
+    seasonal_dim: str
+        variable over which to calculate climatologies
+        Together, time_dim and seasonal_dim (ie 'time.month') form what goes into the groupby
+    
+    Returns
+    -------
+    ds_anomaly: xr.DataArray
+        ds, with the climatology removed
+        should be chunked in the same way as ds, and not expand the dask graph too much
+    
+    With MANY thanks to @rabernat from github; 
+    https://nbviewer.org/gist/rabernat/30e7b747f0e3583b5b776e4093266114
+    from which this code is adapted
+    
+    '''
+    
+    def calculate_anomaly(ds,clim,time_dim,seasonal_dim):
+        gb = ds.groupby(time_dim+'.'+seasonal_dim)
+        if clim is None:
+            clim = gb.mean()
+        return gb - clim
+
+    return xr.map_blocks(calculate_anomaly,
+                         ds,
+                         kwargs={'clim':clim,'time_dim':time_dim,'seasonal_dim':seasonal_dim},
+                         template=ds.assign_coords({seasonal_dim:ds[time_dim+'.'+seasonal_dim]})
+                        )
 
 def DJF_mean(x):
     warnings.warn('Old DJF_mean, perhaps switch to using seasonal_mean?')
