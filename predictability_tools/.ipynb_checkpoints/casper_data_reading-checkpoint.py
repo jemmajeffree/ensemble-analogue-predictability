@@ -5,16 +5,24 @@ import glob
 import warnings
 import os
 
+def print_jemma():
+    ''' testing if global variables are passed through to functions in modules'''
+    print(jemma)
+    return
+
 def SMILE_means(data,filename,zos_var='zos',lat_var='lat',M_var='SMILE_M'):
     ''' Calculate and save some means that get in the way of the signal'''
 
     #Seasonal cycle
     seasonal_mean = (data).groupby('time.month').mean().mean(M_var).load() #this order of operations because of files
 
-    #Total volume in ocean
-    lat_weight = np.cos(np.deg2rad(data[lat_var]))
-    zos_global_mean = (((data.groupby('time.month')-seasonal_mean).sel(var=zos_var) *lat_weight).sum(('lat','lon'))
-                       /((~np.isnan(data.isel(SMILE_M=0,time=0)).sel(var=zos_var))*lat_weight).sum(('lat','lon'))).load()
+    if zos_var is None:
+        zos_global_mean = np.nan
+    else:
+        #Total volume in ocean
+        lat_weight = np.cos(np.deg2rad(data[lat_var]))
+        zos_global_mean = (((data.groupby('time.month')-seasonal_mean).sel(var=zos_var) *lat_weight).sum(('lat','lon'))
+                           /((~np.isnan(data.isel(SMILE_M=0,time=0)).sel(var=zos_var))*lat_weight).sum(('lat','lon'))).load()
 
 
     out_means = xr.Dataset({'seasonal_mean':seasonal_mean,
@@ -122,7 +130,7 @@ def get_CESM2_025_lens_ss():
     zos_global_mean = xr.load_dataset(means_file).zos_global_mean
     #full_model_ss.loc[{'var':'zos'}] -= zos_global_mean # Doesn't work in a recent xarray update, weirdly. Can't be bothered finding out why
     #I'm pretty sure this isn't an intented use of "where", but I can't think why it wouldn't work
-    full_model_ss = full_model_ss.where(~(full_model_ss['var']=='tos'),full_model_ss-zos_global_mean)
+    full_model_ss = full_model_ss.where(~(full_model_ss['var']=='zos'),full_model_ss-zos_global_mean)
     zos_global_mean.close()#
     
     return full_model_ss
@@ -200,6 +208,7 @@ def get_ACCESS_ESM1_5_025_SMILE_ss():
                             combine = 'nested',
                             concat_dim = ('SMILE_M'),
                             preprocess = lambda x: x[var].sel(time=time_slice),
+                            chunks = {'lat':-1,'lon':-1,'time':-1,'SMILE_M':1},
                            parallel = True))
     
     
@@ -211,13 +220,14 @@ def get_ACCESS_ESM1_5_025_SMILE_ss():
 
     #Strip seasonal variability
     seasonal_mean = xr.load_dataset(means_file).seasonal_mean
-    full_model_ss = full_model_ss.groupby('time.month')-seasonal_mean
+    #full_model_ss = full_model_ss.groupby('time.month')-seasonal_mean
+    full_model_ss = strip_climatology(full_model_ss,clim = seasonal_mean)
 
     #Strip global mean
     zos_global_mean = xr.load_dataset(means_file).zos_global_mean
     #full_model_ss.loc[{'var':'zos'}] -= zos_global_mean #This breaks with xarray after 2024. No clue why
     #I'm pretty sure this isn't an intented use of "where", but I can't think why it wouldn't work
-    full_model_ss = full_model_ss.where(~(full_model_ss['var']=='tos'),full_model_ss-zos_global_mean)
+    full_model_ss = full_model_ss.where(~(full_model_ss['var']=='zos'),full_model_ss-zos_global_mean)
     
     return full_model_ss
     
@@ -248,6 +258,7 @@ def get_MPI_025_SMILE_ss():
                             combine = 'nested',
                             concat_dim = ('SMILE_M'),
                             preprocess = lambda x: x[var].sel(time=time_slice),
+                            chunks = {'lat':-1,'lon':-1,'time':-1,'SMILE_M':1},
                            parallel = True))
     
     
@@ -259,11 +270,13 @@ def get_MPI_025_SMILE_ss():
 
     #Strip seasonal variability
     seasonal_mean = xr.load_dataset(means_file).seasonal_mean
-    full_model_ss = full_model_ss.groupby('time.month')-seasonal_mean
+    #full_model_ss = full_model_ss.groupby('time.month')-seasonal_mean
+    full_model_ss = strip_climatology(full_model_ss,clim=seasonal_mean)
 
     #Strip global mean
     zos_global_mean = xr.load_dataset(means_file).zos_global_mean
-    full_model_ss.loc[{'var':'zos'}] -= zos_global_mean
+    #full_model_ss.loc[{'var':'zos'}] -= zos_global_mean
+    full_model_ss = full_model_ss.where(~(full_model_ss['var']=='zos'),full_model_ss-zos_global_mean)
 
     return full_model_ss
 
@@ -331,6 +344,28 @@ def get_obs_025_ss():
     #Strip global mean
     zos_global_mean = xr.load_dataset(means_file).zos_global_mean
     full_model_ss.loc[{'var':'zos'}] -= zos_global_mean.squeeze()
+
+    return full_model_ss
+
+def get_ersstv5_025_ss():
+
+    data_name = 'ERSSTv5'
+    var_list=('tos',)
+    time_slice = slice('1854-01','2023-12')
+
+    sst = xr.open_dataset('/glade/work/jjeffree/observations/ersstv5.mnmean_025.nc').sst.squeeze()
+    
+    full_model_ss = xr.concat((sst,),'var').assign_coords({'var':np.array(var_list)})
+    full_model_ss = full_model_ss.sel(time=time_slice)
+    
+
+    means_file = '/glade/work/jjeffree/SMILE_means/'+data_name+'_025.nc'
+    if not(os.path.isfile(means_file)):
+        SMILE_means(full_model_ss.expand_dims('SMILE_M'),means_file,zos_var=None) ###
+
+    #Strip seasonal variability
+    seasonal_mean = xr.load_dataset(means_file).seasonal_mean
+    full_model_ss = strip_climatology(full_model_ss,clim=seasonal_mean)
 
     return full_model_ss
 

@@ -8,6 +8,8 @@ import numpy as np
 import xarray as xr
 import warnings
 from xhistogram.xarray import histogram
+from matplotlib.collections import LineCollection
+import matplotlib.patheffects as path_effects
 
 #This script builds off everything else
 from .statistics import *
@@ -217,3 +219,118 @@ def analogue_goodness(this_obs,
     
         
     plt.subplots_adjust(hspace=0.5,wspace=0.45)
+
+
+def add_iso_line(ax, data, value,x_shift,y_shift,linekwargs={'colors':'grey','lw':2}):
+    '''Adapted from https://stackoverflow.com/questions/63458863/way-to-contour-outer-edge-of-selected-grid-region-in-python/63459354#63459354
+    Draws a contour around the edges of cells, instead of interpolating like contour does'''
+    v = np.diff(data>value,axis=1)
+    h = np.diff(data>value,axis=0)
+    
+
+    l = np.argwhere(v.T).astype(float)  
+    l[:,0]+=0.5+x_shift
+    l[:,1]+=-0.5+y_shift
+    vlines = np.array(list(zip(l, np.stack((l[:,0], l[:,1]+1)).T)))
+    
+
+    l = np.argwhere(h.T).astype(float) 
+    l[:,0]+=-0.5+x_shift
+    l[:,1]+=0.5+y_shift
+    hlines = np.array(list(zip(l, np.stack((l[:,0]+1, l[:,1])).T)))#-0.5
+
+    lines = np.vstack((vlines, hlines))
+
+    assert len(lines>0), "No lines to plot; contour probably doesn't exist"
+
+    ax.add_collection(LineCollection(lines, path_effects=[path_effects.Stroke(capstyle="round")],**linekwargs))
+
+def sailboat(skill,
+                    N = 40*90*7,
+                    start_mask = '30P',
+                    later_mask=('30P30A','30P30I','60P'),
+                    skill_type='corr',
+                    vlim=(-0.1,0.1),
+
+    ):
+    assert not(0 in skill.init_month), 'Month should have coordinates'
+    if skill_type=='corr':
+        diff_func = lambda x,y: np.tanh(np.arctanh(y)-np.arctanh(x))
+        cmap = 'BrBG'
+        def stat_sig(r,r1):
+            S = np.sqrt(1/(N-3))
+
+            z = (np.arctanh(r1)-np.arctanh(r))/S
+            
+            stat_sig = xr.ones_like(z).where(np.abs(z)>1.96)
+            if np.any(~np.isnan(stat_sig)) and np.any(np.isnan(stat_sig)):
+                add_iso_line(plt.gca(), stat_sig.roll(init_month=-4).T, 0.01,x_shift = 5, y_shift = 0,linekwargs={'colors':'grey','lw':0.8,'linestyle':'dotted'}) #I think xshift is 1st month???
+
+            stat_sig = xr.ones_like(z).where(np.abs(z)>2.58)
+            if np.any(~np.isnan(stat_sig)) and np.any(np.isnan(stat_sig)):
+                add_iso_line(plt.gca(), stat_sig.roll(init_month=-4).T, 0.01,x_shift = 5, y_shift = 0,linekwargs={'colors':'grey','lw':1,}) #I think xshift is 1st month???
+        clabel0 = 'r'
+        clabel = '$\Delta$r'
+
+    elif skill_type=='mse':
+        diff_func = lambda x,y: ((y-x)/x)*100
+        cmap = 'BrBG_r'
+
+        def stat_sig(r,r1):
+                F = r1/r
+
+                p_good = scipy.stats.f.cdf(r1/r,N-2,N-2)
+                p_bad = scipy.stats.f.cdf(r/r1,N-2,N-2)
+                p = np.min((p_good,p_bad),axis=0)
+                
+                stat_sig = xr.ones_like(F).where(p<0.01)
+                if np.any(~np.isnan(stat_sig)) and np.any(np.isnan(stat_sig)):
+                    add_iso_line(plt.gca(), stat_sig.roll(init_month=-4).T, 0.01,x_shift = 5, y_shift = 0,linekwargs={'colors':'grey','lw':0.8,})#'linestyle':'dotted' #I think xshift is 1st month???
+
+        clabel0 = 'MSE'
+        clabel = '% MSE change'
+    else:
+        assert False, 'need a skill type'
+
+    
+    fig, axs = plt.subplots(1,len(later_mask)+1,figsize=((len(later_mask)+1)*4,8),
+                           sharex=True,sharey=True)
+
+    plt.sca(axs[0])
+    plt.title(start_mask)
+    r = skill.sel(mask=start_mask)
+    scatter = plt.scatter((r.init_month+r.L*0-5)%12+5,
+            r.init_month*0+r.L,
+            c=r,
+            cmap='YlGn',marker='s',s=100,vmin=0,vmax=1)
+    plt.xlabel('Initialisation month')
+    plt.ylabel('Lead time (months)')
+    
+    fig.colorbar(scatter, ax=axs[0],orientation='horizontal', fraction=.05,
+             extend='both',label = clabel0)
+
+    for ax_i in range(len(later_mask)):
+        plt.sca(axs[ax_i+1])
+
+
+        r1 = skill.sel(mask=later_mask[ax_i])
+
+        scatter = plt.scatter((r.init_month+r.L*0-5)%12+5,
+            r.init_month*0+r.L,
+            c=diff_func(r,r1),
+            cmap=cmap,marker='s',s=100,vmin=vlim[0],vmax=vlim[1])
+        # print(diff_func(r,r1).sel(L=12,init_month=8).load())
+        # print(diff_func(1.319,1.28))
+        # print('---------')
+        # print(r.sel(L=12,init_month=8))
+        # print(r1.sel(L=12,init_month=8))
+
+        stat_sig(r,r1)
+
+        plt.xticks((13,16,7,10),('Jan','Apr','Jul','Oct'))
+        plt.title(start_mask+' -> '+later_mask[ax_i])
+        plt.xlabel('Initialisation month')
+
+    fig.colorbar(scatter, ax=axs[1:],orientation='horizontal', fraction=.05,
+             extend='both',label = clabel,aspect=20*len(later_mask))
+    return axs

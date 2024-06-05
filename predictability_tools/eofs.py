@@ -324,7 +324,7 @@ def calculate_trimmed_weighted_eof(weighted_ss,
     filename = (folder
                 +'/eof.nc'
                )
-    
+    #print(folder)
     if not os.path.isdir(folder):
         os.mkdir(folder)
     
@@ -466,7 +466,7 @@ def save_weighted_eof_set(ss,
     n_modes           - how many EOFs to calculate. Even 50 is way under how much data you would have without
                           dimension reduction
                           '''
-    
+    assert 'var' in ss.dims, 'Need to have a "var" dimension otherwise weights will accidentally generate one'
     weights = xr.load_dataarray(weightfolder_name+'weights.nc')
     weighted_ss = (weights*ss).load()
     
