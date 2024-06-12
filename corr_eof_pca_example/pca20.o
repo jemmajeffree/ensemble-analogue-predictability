@@ -1,0 +1,9 @@
+Using config from /glade/u/home/jjeffree/ensemble-analogue-predictability/base_eof_config.py
+Model data read; 3.3568472862243652 s
+Model data loaded; 15.282808065414429 s
+Ensemble members slice(20, 30, None)
+Variables ['tos' 'zos']
+4 30P 16.548322677612305
+4 30P30A 17.037681102752686
+10 30P 18.30389904975891
+10 30P30A 18.82073426246643

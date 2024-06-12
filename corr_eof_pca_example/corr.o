@@ -1,0 +1,14 @@
+Using config from /glade/u/home/jjeffree/ensemble-analogue-predictability/base_eof_config.py
+Model data aquired; ACCESS-ESM1-5; 13.971638441085815 s
+Correlation index calculated; NINO34; 15.108972311019897 s
+Writing to/glade/work/jjeffree/pca_variations/testing_correlation_weight/
+Correlation init month  4 17.94972062110901
+Done, 17.94973349571228 s
+Using config from /glade/u/home/jjeffree/ensemble-analogue-predictability/base_eof_config.py
+Model data aquired; ACCESS-ESM1-5; 12.63471245765686 s
+Correlation index calculated; NINO34; 13.77394723892212 s
+Writing to/glade/work/jjeffree/pca_variations/testing_correlation_weight/
+skipping l=6 init=4
+Correlation init month  4 17.07691526412964
+Correlation init month  10 20.22561550140381
+Done, 20.225627422332764 s

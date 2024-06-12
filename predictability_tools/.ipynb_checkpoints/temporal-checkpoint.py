@@ -60,6 +60,26 @@ def strip_climatology(ds,
                          template=ds.assign_coords({seasonal_dim:ds[time_dim+'.'+seasonal_dim]})
                         )
 
+def calc_climatology(ds, 
+                      time_dim = 'time',
+                      seasonal_dim = 'month',
+                     ):
+    '''
+    As above, but returns the climatology not the subtracted thing
+    
+    '''
+    
+    def calculate_climatology(ds,time_dim,seasonal_dim):
+        gb = ds.groupby(time_dim+'.'+seasonal_dim)
+        clim = gb.mean()
+        return clim
+
+    return xr.map_blocks(calculate_climatology,
+                         ds,
+                         kwargs={'time_dim':time_dim,'seasonal_dim':seasonal_dim},
+                         template=ds.assign_coords({seasonal_dim:ds[time_dim+'.'+seasonal_dim]})
+                        )
+
 def DJF_mean(x):
     warnings.warn('Old DJF_mean, perhaps switch to using seasonal_mean?')
     return x.rolling({'L':3},center=True).mean().sel(L=np.arange(10)*12+2)

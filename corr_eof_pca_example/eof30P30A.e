@@ -1,0 +1,4 @@
+/glade/u/home/jjeffree/ensemble-analogue-predictability/eof_calculation.py:53: UserWarning: Model data aquired; ACCESS-ESM1-5; 10.17935061454773 s
+  warnings.warn('Model data aquired; '+data_name+"; "+str(time.time()-t0)+' s')
+/glade/u/home/jjeffree/ensemble-analogue-predictability/eof_calculation.py:56: UserWarning: Calculating 30P30A
+  warnings.warn('Calculating '+mask)
