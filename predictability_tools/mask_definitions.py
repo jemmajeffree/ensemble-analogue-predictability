@@ -46,3 +46,7 @@ mask_dict['30P30A30I'] = ocean_mask.where(np.abs(ocean_mask['lat'])<30,0)
 
 mask_dict['30P45S'] = pacific_mask.where(np.abs(pacific_mask['lat'])<30,0) | ocean_mask.where(ocean_mask['lat']<-45,0)
 
+#Weird nuanced stuff
+#Pacific 10P but with an extra bit to capture the cold tongue better
+mask_dict['10P30S80WP'] = pacific_mask.where((pacific_mask.lat<10) & ((pacific_mask.lat>-10) | ((pacific_mask.lat>-30) & (pacific_mask.lon>260))),0)
+

@@ -26,6 +26,20 @@ def SMILE_means(data,filename,zos_var='zos',lat_var='lat',M_var='SMILE_M'):
                             'zos_global_mean':zos_global_mean})
     out_means.to_netcdf(filename)
 
+def strip_ensemble_mean(data,filename,M_var='SMILE_M'):
+    '''A quick wrapper to pull the ensemble mean off anything,
+    specifically so that I can check what difference it makes to the CanESM5'''
+
+    if os.path.isfile(filename):
+        ensemble_mean = xr.load_dataset(filename).ensemble_mean
+    else:
+        ensemble_mean = data.mean(M_var).load()
+
+        out_means = xr.Dataset({'ensemble_mean':ensemble_mean})
+        out_means.to_netcdf(filename)
+    return data-ensemble_mean
+
+
 def get_CESM2_ss():
 
     ## CHECK UNITS
@@ -357,8 +371,12 @@ def get_model_regrid_025_ss(data_name,
     #Strip global mean
     zos_global_mean = xr.load_dataset(means_file).zos_global_mean
     full_model_ss = full_model_ss.where(~(full_model_ss['var']=='zos'),full_model_ss-zos_global_mean)
-
-    return full_model_ss.squeeze() #Squeeze ordering matters. If you get ValueError: replacement data must match the Variable's shape then the squeeze is probably sad about something further down the line
+    
+    expected_dims = ('var','SMILE_M','time','lat','lon')
+    for d in full_model_ss.dims:
+        if d not in expected_dims:
+            full_model_ss = full_model_ss.squeeze(d,drop=True)
+    return full_model_ss
 
 get_025_ss['MPI-GE'] = lambda: get_model_regrid_025_ss(data_name='MPI-GE',
                             location='/glade/campaign/cgd/cas/nmaher/mpi_lens/Omon/',
@@ -414,6 +432,13 @@ get_025_ss['MPI-CMIP6'] = lambda : get_model_regrid_025_ss(data_name='MPI-CMIP6'
                            var_list = ('tos','zos'),
                            tail = 'i1p1f1_gn_185001-201412_g025.nc')
 
+get_025_ss['CanESM5_nomean'] = lambda : strip_ensemble_mean(get_025_ss['CanESM5'](),
+                                                   '/glade/work/jjeffree/SMILE_means/CanESM5_025_ensemble_mean.nc')
+get_025_ss['ACCESS-ESM1-5_nomean'] = lambda : strip_ensemble_mean(get_025_ss['ACCESS-ESM1-5'](),
+                                                   '/glade/work/jjeffree/SMILE_means/ACCESS-ESM1-5_025_ensemble_mean.nc')
+get_025_ss['MIROC6_nomean'] = lambda : strip_ensemble_mean(get_025_ss['MIROC6'](),
+                                                   '/glade/work/jjeffree/SMILE_means/MIROC6_025_ensemble_mean.nc')
+
 
 n_ensemble_members = {'CESM2-LE_025':100,
                       'ACCESS-ESM1-5':40,
@@ -426,6 +451,10 @@ n_ensemble_members = {'CESM2-LE_025':100,
                       'OISST-AVISO':1,
                       'GFDL-ES2M':30,
                       'MPI-CMIP6':50,
+
+                      'ACCESS-ESM1-5_nomean':40,
+                      'CanESM5_nomean':40,
+                      'MIROC6_nomean':50,
 
 }
 

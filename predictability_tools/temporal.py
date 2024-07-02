@@ -42,9 +42,9 @@ def strip_climatology(ds,
         ds, with the climatology removed
         should be chunked in the same way as ds, and not expand the dask graph too much
     
-    With MANY thanks to @rabernat from github; 
+    With MANY thanks to @rabernat from github for bringing this solution to my attention; 
+    This code is adapted from 
     https://nbviewer.org/gist/rabernat/30e7b747f0e3583b5b776e4093266114
-    from which this code is adapted
     
     '''
     
@@ -55,7 +55,7 @@ def strip_climatology(ds,
         return gb - clim
 
     return xr.map_blocks(calculate_anomaly,
-                         ds,
+                         ds.chunk({'time':-1}),
                          kwargs={'clim':clim,'time_dim':time_dim,'seasonal_dim':seasonal_dim},
                          template=ds.assign_coords({seasonal_dim:ds[time_dim+'.'+seasonal_dim]})
                         )

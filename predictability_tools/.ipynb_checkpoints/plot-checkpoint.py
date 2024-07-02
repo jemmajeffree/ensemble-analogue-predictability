@@ -251,6 +251,9 @@ def sailboat(skill,
                     later_mask=('30P30A','30P30I','60P'),
                     skill_type='corr',
                     vlim=(-0.1,0.1),
+             fig = None,
+             axs = None,
+             cb_axs=None,
 
     ):
     assert not(0 in skill.init_month), 'Month should have coordinates'
@@ -292,9 +295,12 @@ def sailboat(skill,
     else:
         assert False, 'need a skill type'
 
-    
-    fig, axs = plt.subplots(1,len(later_mask)+1,figsize=((len(later_mask)+1)*4,8),
-                           sharex=True,sharey=True)
+    if fig is None:
+        assert axs is None, 'Either pass both axs and fig or neither'
+        fig, axs = plt.subplots(1,len(later_mask)+1,figsize=((len(later_mask)+1)*4,8),
+                               sharex=True,sharey=True)
+    if cb_axs is None:
+        cb_axs=axs[0],axs[1:]
 
     plt.sca(axs[0])
     plt.title(start_mask)
@@ -306,7 +312,7 @@ def sailboat(skill,
     plt.xlabel('Initialisation month')
     plt.ylabel('Lead time (months)')
     
-    fig.colorbar(scatter, ax=axs[0],orientation='horizontal', fraction=.05,
+    fig.colorbar(scatter, ax=cb_axs[0],orientation='horizontal', fraction=.05,
              extend='both',label = clabel0)
 
     for ax_i in range(len(later_mask)):
@@ -331,6 +337,87 @@ def sailboat(skill,
         plt.title(start_mask+' -> '+later_mask[ax_i])
         plt.xlabel('Initialisation month')
 
-    fig.colorbar(scatter, ax=axs[1:],orientation='horizontal', fraction=.05,
+    fig.colorbar(scatter, ax=cb_axs[1],orientation='horizontal', fraction=.05,
+             extend='both',label = clabel,aspect=20*len(later_mask))
+    return axs
+
+def incremental_sailboat(skill,
+                    N = 40*90*7,
+                    start_mask = ('30P','30P','30P'),
+                    later_mask=('30P30A','30P30I','60P'),
+                    skill_type='corr',
+                    vlim=(-0.1,0.1),
+             fig = None,
+             axs = None,
+             cb_axs=None,
+
+    ):
+    assert not(0 in skill.init_month), 'Month should have coordinates'
+    if skill_type=='corr':
+        diff_func = lambda x,y: np.tanh(np.arctanh(y)-np.arctanh(x))
+        cmap = 'BrBG'
+        def stat_sig(r,r1):
+            S = np.sqrt(1/(N-3))
+
+            z = (np.arctanh(r1)-np.arctanh(r))/S
+            
+            stat_sig = xr.ones_like(z).where(np.abs(z)>1.96)
+            if np.any(~np.isnan(stat_sig)) and np.any(np.isnan(stat_sig)):
+                add_iso_line(plt.gca(), stat_sig.roll(init_month=-4).T, 0.01,x_shift = 5, y_shift = 0,linekwargs={'colors':'grey','lw':0.8,'linestyle':'dotted'}) #I think xshift is 1st month???
+
+            stat_sig = xr.ones_like(z).where(np.abs(z)>2.58)
+            if np.any(~np.isnan(stat_sig)) and np.any(np.isnan(stat_sig)):
+                add_iso_line(plt.gca(), stat_sig.roll(init_month=-4).T, 0.01,x_shift = 5, y_shift = 0,linekwargs={'colors':'grey','lw':1,}) #I think xshift is 1st month???
+        clabel0 = 'r'
+        clabel = '$\Delta$r'
+
+    elif skill_type=='mse':
+        diff_func = lambda x,y: ((y-x)/x)*100
+        cmap = 'BrBG_r'
+
+        def stat_sig(r,r1):
+                F = r1/r
+
+                p_good = scipy.stats.f.cdf(r1/r,N-2,N-2)
+                p_bad = scipy.stats.f.cdf(r/r1,N-2,N-2)
+                p = np.min((p_good,p_bad),axis=0)
+                
+                stat_sig = xr.ones_like(F).where(p<0.01)
+                if np.any(~np.isnan(stat_sig)) and np.any(np.isnan(stat_sig)):
+                    add_iso_line(plt.gca(), stat_sig.roll(init_month=-4).T, 0.01,x_shift = 5, y_shift = 0,linekwargs={'colors':'grey','lw':0.8,})#'linestyle':'dotted' #I think xshift is 1st month???
+
+        clabel0 = 'MSE'
+        clabel = '% MSE change'
+    else:
+        assert False, 'need a skill type'
+
+    if fig is None:
+        assert axs is None, 'Either pass both axs and fig or neither'
+        fig, axs = plt.subplots(1,len(later_mask)+1,figsize=((len(later_mask)+1)*4,8),
+                               sharex=True,sharey=True)
+    elif axs is None:
+        assert False, 'Either pass both axs and fig or neither'
+        
+    if cb_axs is None:
+        cb_axs=axs
+
+    assert len(later_mask) == len(start_mask), 'later and start mask must be paired'
+    for ax_i in range(len(later_mask)):
+        plt.sca(axs[ax_i])
+
+        r = skill.sel(mask=start_mask[ax_i])
+        r1 = skill.sel(mask=later_mask[ax_i])
+
+        scatter = plt.scatter((r.init_month+r.L*0-5)%12+5,
+            r.init_month*0+r.L,
+            c=diff_func(r,r1),
+            cmap=cmap,marker='s',s=100,vmin=vlim[0],vmax=vlim[1])
+        stat_sig(r,r1)
+
+        plt.xticks((13,16,7,10),('Jan','Apr','Jul','Oct'))
+        plt.title(start_mask[ax_i]+' -> '+later_mask[ax_i])
+        plt.xlabel('Initialisation month')
+
+    fig.colorbar(scatter, ax=cb_axs,orientation='horizontal', fraction=.05,
              extend='both',label = clabel,aspect=20*len(later_mask))
     return axs
