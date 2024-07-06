@@ -432,12 +432,15 @@ get_025_ss['MPI-CMIP6'] = lambda : get_model_regrid_025_ss(data_name='MPI-CMIP6'
                            var_list = ('tos','zos'),
                            tail = 'i1p1f1_gn_185001-201412_g025.nc')
 
-get_025_ss['CanESM5_nomean'] = lambda : strip_ensemble_mean(get_025_ss['CanESM5'](),
-                                                   '/glade/work/jjeffree/SMILE_means/CanESM5_025_ensemble_mean.nc')
-get_025_ss['ACCESS-ESM1-5_nomean'] = lambda : strip_ensemble_mean(get_025_ss['ACCESS-ESM1-5'](),
-                                                   '/glade/work/jjeffree/SMILE_means/ACCESS-ESM1-5_025_ensemble_mean.nc')
-get_025_ss['MIROC6_nomean'] = lambda : strip_ensemble_mean(get_025_ss['MIROC6'](),
-                                                   '/glade/work/jjeffree/SMILE_means/MIROC6_025_ensemble_mean.nc')
+for model_name in ('CESM2-LE_025','ACCESS-ESM1-5','MPI-GE','MIROC6','CanESM5','IPSL-CM6A-L','MIROC-ES2L','GFDL-ES2M','MPI-CMIP6'):
+    get_025_ss[model_name+'_nomean'] = lambda : strip_ensemble_mean(get_025_ss[model_name](),
+                                                                  '/glade/work/jjeffree/SMILE_means/'+model_name+'_ensemble_mean.nc')
+# get_025_ss['CanESM5_nomean'] = lambda : strip_ensemble_mean(get_025_ss['CanESM5'](),
+#                                                    '/glade/work/jjeffree/SMILE_means/CanESM5_025_ensemble_mean.nc')
+# get_025_ss['ACCESS-ESM1-5_nomean'] = lambda : strip_ensemble_mean(get_025_ss['ACCESS-ESM1-5'](),
+#                                                    '/glade/work/jjeffree/SMILE_means/ACCESS-ESM1-5_025_ensemble_mean.nc')
+# get_025_ss['MIROC6_nomean'] = lambda : strip_ensemble_mean(get_025_ss['MIROC6'](),
+#                                                    '/glade/work/jjeffree/SMILE_means/MIROC6_025_ensemble_mean.nc')
 
 
 n_ensemble_members = {'CESM2-LE_025':100,
