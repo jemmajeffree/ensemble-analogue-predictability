@@ -16,7 +16,7 @@ time_dims = ('time','SMILE_M')
 correlation_member_trim = lambda x: x.isel(SMILE_M = slice(None,10))
 eof_member_trim = lambda x: x.isel(SMILE_M = slice(None,4))
 
-leads = np.arange(24) #lead time ####np.array((0,6))#
+leads = np.arange(37) #lead time ####np.array((0,6))#
 init_months = np.arange(1,13) #Was 1,13, has been tweaked to finish running the eof script ####np.array((4,10))#
 
 #For the correlations

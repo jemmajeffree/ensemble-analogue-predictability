@@ -16,7 +16,7 @@ time_dims = ('time','SMILE_M')
 correlation_member_trim = lambda x: x.isel(SMILE_M = slice(None,10))
 eof_member_trim = lambda x: x.isel(SMILE_M = slice(None,4))
 
-leads = np.arange(24) #lead time ####np.array((0,6))#
+leads = np.arange(37) #lead time ####np.array((0,6))#
 init_months = np.arange(1,13) #Was 1,13, has been tweaked to finish running the eof script ####np.array((4,10))#
 
 #For the correlations
@@ -71,6 +71,7 @@ analogue_time_slice = {'CESM2-LE_025':slice('1855','1945'),
                        'MIROC-ES2L':slice('1855','1945'),
                        'ERSSTv5':slice(None,'2021'),
                        'GFDL-ES2M':slice('1866','1956'),
+                       'MPI-CMIP6':slice('1855','1945'),
 }
 
 lib_dim_chunk_size = 115 #Should be the number of years in a library divided by the number of cores, plus a small buffer

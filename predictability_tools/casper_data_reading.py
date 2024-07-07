@@ -196,143 +196,143 @@ def get_CESM1_025_SMILE_ss():
 
     return full_model_ss
 
-def get_ACCESS_ESM1_5_025_SMILE_ss():
+# def get_ACCESS_ESM1_5_025_SMILE_ss():
 
-    data_name = 'ACCESS-ESM1-5'
+#     data_name = 'ACCESS-ESM1-5'
     
-    time_slice = slice('1850','1949')
+#     time_slice = slice('1850','1949')
     
-    filenames = np.sort([f.split('/')[-1]
-                                    for f in glob.glob('/glade/campaign/cgd/cas/nmaher/access_lens/Omon/tos/tos_mon_ACCESS-ESM1-5_historical*_g025.nc')])
-    member_names = [fhof.split('_')[4] for fhof in filenames]
-    middle_bit = '_mon_ACCESS-ESM1-5_historical_'
-    ss = []
-    var_list = ('tos','zos')
+#     filenames = np.sort([f.split('/')[-1]
+#                                     for f in glob.glob('/glade/campaign/cgd/cas/nmaher/access_lens/Omon/tos/tos_mon_ACCESS-ESM1-5_historical*_g025.nc')])
+#     member_names = [fhof.split('_')[4] for fhof in filenames]
+#     middle_bit = '_mon_ACCESS-ESM1-5_historical_'
+#     ss = []
+#     var_list = ('tos','zos')
     
-    for var in var_list:
-        filepaths = ['/glade/campaign/cgd/cas/nmaher/access_lens/Omon/'+var+'/'+var+middle_bit+mn+'_g025.nc' for mn in member_names]
+#     for var in var_list:
+#         filepaths = ['/glade/campaign/cgd/cas/nmaher/access_lens/Omon/'+var+'/'+var+middle_bit+mn+'_g025.nc' for mn in member_names]
     
-        ss.append(xr.open_mfdataset(filepaths,
-                            coords='minimal',
-                            compat='override',
-                            combine = 'nested',
-                            concat_dim = ('SMILE_M'),
-                            preprocess = lambda x: x[var].sel(time=time_slice),
-                            chunks = {'lat':-1,'lon':-1,'time':-1,'SMILE_M':1},
-                           parallel = True))
+#         ss.append(xr.open_mfdataset(filepaths,
+#                             coords='minimal',
+#                             compat='override',
+#                             combine = 'nested',
+#                             concat_dim = ('SMILE_M'),
+#                             preprocess = lambda x: x[var].sel(time=time_slice),
+#                             chunks = {'lat':-1,'lon':-1,'time':-1,'SMILE_M':1},
+#                            parallel = True))
     
     
-    full_model_ss = xr.concat(ss,'var').assign_coords({'var':np.array(var_list)}).squeeze().assign_coords({'SMILE_M':member_names})
+#     full_model_ss = xr.concat(ss,'var').assign_coords({'var':np.array(var_list)}).squeeze().assign_coords({'SMILE_M':member_names})
 
-    means_file = '/glade/work/jjeffree/SMILE_means/ACCESS-ESM1-5-LE_025.nc'
-    if not(os.path.isfile(means_file)):
-        SMILE_means(full_model_ss,means_file)
+#     means_file = '/glade/work/jjeffree/SMILE_means/ACCESS-ESM1-5-LE_025.nc'
+#     if not(os.path.isfile(means_file)):
+#         SMILE_means(full_model_ss,means_file)
 
-    #Strip seasonal variability
-    seasonal_mean = xr.load_dataset(means_file).seasonal_mean
-    #full_model_ss = full_model_ss.groupby('time.month')-seasonal_mean
-    full_model_ss = strip_climatology(full_model_ss,clim = seasonal_mean)
+#     #Strip seasonal variability
+#     seasonal_mean = xr.load_dataset(means_file).seasonal_mean
+#     #full_model_ss = full_model_ss.groupby('time.month')-seasonal_mean
+#     full_model_ss = strip_climatology(full_model_ss,clim = seasonal_mean)
 
-    #Strip global mean
-    zos_global_mean = xr.load_dataset(means_file).zos_global_mean
-    #full_model_ss.loc[{'var':'zos'}] -= zos_global_mean #This breaks with xarray after 2024. No clue why
-    #I'm pretty sure this isn't an intented use of "where", but I can't think why it wouldn't work
-    full_model_ss = full_model_ss.where(~(full_model_ss['var']=='zos'),full_model_ss-zos_global_mean)
+#     #Strip global mean
+#     zos_global_mean = xr.load_dataset(means_file).zos_global_mean
+#     #full_model_ss.loc[{'var':'zos'}] -= zos_global_mean #This breaks with xarray after 2024. No clue why
+#     #I'm pretty sure this isn't an intented use of "where", but I can't think why it wouldn't work
+#     full_model_ss = full_model_ss.where(~(full_model_ss['var']=='zos'),full_model_ss-zos_global_mean)
     
-    return full_model_ss
-get_025_ss['ACCESS-ESM1-5'] = get_ACCESS_ESM1_5_025_SMILE_ss
+#     return full_model_ss
+# get_025_ss['ACCESS-ESM1-5'] = get_ACCESS_ESM1_5_025_SMILE_ss
     
-def get_ACCESS_ESM1_5_SMILE_ss():
-    '''Old alias'''
-    warnings.warn('Old name for getting data, has been renamed to get_ACCESS_ESM1_5_025_SMILE_ss()')
-    return get_ACCESS_ESM1_5_025_SMILE_ss()
+# def get_ACCESS_ESM1_5_SMILE_ss():
+#     '''Old alias'''
+#     warnings.warn('Old name for getting data, has been renamed to get_ACCESS_ESM1_5_025_SMILE_ss()')
+#     return get_ACCESS_ESM1_5_025_SMILE_ss()
 
-def get_MPI_025_SMILE_ss():
+# def get_MPI_025_SMILE_ss():
 
-    data_name = 'MPI-GE'
+#     data_name = 'MPI-GE'
     
-    time_slice = slice('1850','1949')
+#     time_slice = slice('1850','1949')
     
-    # filenames = np.sort([f.split('/')[-1]
-    #                                 for f in glob.glob('/glade/campaign/cgd/cas/nmaher/mpi_lens/Omon/tos/tos_mon_ACCESS-ESM1-5_historical*_g025.nc')])
-    member_names = np.char.zfill(np.arange(1,101,dtype=int).astype(str),3)
-    middle_bit = '_Omon_MPI-ESM_historical_rcp85_r'
-    ss = []
-    var_list = ('tos','zos')
+#     # filenames = np.sort([f.split('/')[-1]
+#     #                                 for f in glob.glob('/glade/campaign/cgd/cas/nmaher/mpi_lens/Omon/tos/tos_mon_ACCESS-ESM1-5_historical*_g025.nc')])
+#     member_names = np.char.zfill(np.arange(1,101,dtype=int).astype(str),3)
+#     middle_bit = '_Omon_MPI-ESM_historical_rcp85_r'
+#     ss = []
+#     var_list = ('tos','zos')
     
-    for var in var_list:
-        filepaths = ['/glade/campaign/cgd/cas/nmaher/mpi_lens/Omon/'+var+'/'+var+middle_bit+mn+'i1p1_185001-209912_g025.nc' for mn in member_names]
+#     for var in var_list:
+#         filepaths = ['/glade/campaign/cgd/cas/nmaher/mpi_lens/Omon/'+var+'/'+var+middle_bit+mn+'i1p1_185001-209912_g025.nc' for mn in member_names]
     
-        ss.append(xr.open_mfdataset(filepaths,
-                            coords='minimal',
-                            compat='override',
-                            combine = 'nested',
-                            concat_dim = ('SMILE_M'),
-                            preprocess = lambda x: x[var].sel(time=time_slice),
-                            chunks = {'lat':-1,'lon':-1,'time':-1,'SMILE_M':1},
-                           parallel = True))
-    
-    
-    full_model_ss = xr.concat(ss,'var').assign_coords({'var':np.array(var_list)}).squeeze().assign_coords({'SMILE_M':member_names})
-
-    means_file = '/glade/work/jjeffree/SMILE_means/'+data_name+'_025.nc'
-    if not(os.path.isfile(means_file)):
-        SMILE_means(full_model_ss,means_file)
-
-    #Strip seasonal variability
-    seasonal_mean = xr.load_dataset(means_file).seasonal_mean
-    #full_model_ss = full_model_ss.groupby('time.month')-seasonal_mean
-    full_model_ss = strip_climatology(full_model_ss,clim=seasonal_mean)
-
-    #Strip global mean
-    zos_global_mean = xr.load_dataset(means_file).zos_global_mean
-    #full_model_ss.loc[{'var':'zos'}] -= zos_global_mean
-    full_model_ss = full_model_ss.where(~(full_model_ss['var']=='zos'),full_model_ss-zos_global_mean)
-
-    return full_model_ss
-
-
-def get_MIROC6_025_SMILE_ss():
-
-    data_name = 'MIROC6'
-    
-    time_slice = slice('1850','1949')
-
-    member_names = np.arange(1,51,dtype=int).astype(str)
-    middle_bit = '_mon_MIROC6_historical_r'
-    ss = []
-    var_list = ('tos','zos')
-    
-    for var in var_list:
-        filepaths = ['/glade/campaign/cgd/cas/nmaher/miroc6_lens/Omon/'+var+'/'+var+middle_bit+mn+'i1p1f1_g025.nc' for mn in member_names]
-    
-        ss.append(xr.open_mfdataset(filepaths,
-                            coords='minimal',
-                            compat='override',
-                            combine = 'nested',
-                            concat_dim = ('SMILE_M'),
-                            chunks = {'lat':-1,'lon':-1,'time':-1,'SMILE_M':1},
-                            preprocess = lambda x: x[var].sel(time=time_slice),
-                           parallel = True))
+#         ss.append(xr.open_mfdataset(filepaths,
+#                             coords='minimal',
+#                             compat='override',
+#                             combine = 'nested',
+#                             concat_dim = ('SMILE_M'),
+#                             preprocess = lambda x: x[var].sel(time=time_slice),
+#                             chunks = {'lat':-1,'lon':-1,'time':-1,'SMILE_M':1},
+#                            parallel = True))
     
     
-    full_model_ss = xr.concat(ss,'var').assign_coords({'var':np.array(var_list)}).squeeze().assign_coords({'SMILE_M':member_names})
+#     full_model_ss = xr.concat(ss,'var').assign_coords({'var':np.array(var_list)}).squeeze().assign_coords({'SMILE_M':member_names})
 
-    means_file = '/glade/work/jjeffree/SMILE_means/'+data_name+'_025.nc'
-    if not(os.path.isfile(means_file)):
-        SMILE_means(full_model_ss,means_file) ###
+#     means_file = '/glade/work/jjeffree/SMILE_means/'+data_name+'_025.nc'
+#     if not(os.path.isfile(means_file)):
+#         SMILE_means(full_model_ss,means_file)
 
-    #Strip seasonal variability
-    seasonal_mean = xr.load_dataset(means_file).seasonal_mean
-    full_model_ss = strip_climatology(full_model_ss,clim=seasonal_mean)
-    #full_model_ss = full_model_ss.groupby('time.month')-seasonal_mean
+#     #Strip seasonal variability
+#     seasonal_mean = xr.load_dataset(means_file).seasonal_mean
+#     #full_model_ss = full_model_ss.groupby('time.month')-seasonal_mean
+#     full_model_ss = strip_climatology(full_model_ss,clim=seasonal_mean)
 
-    #Strip global mean
-    zos_global_mean = xr.load_dataset(means_file).zos_global_mean
-    #full_model_ss.loc[{'var':'zos'}] -= zos_global_mean
-    full_model_ss = full_model_ss.where(~(full_model_ss['var']=='zos'),full_model_ss-zos_global_mean)
+#     #Strip global mean
+#     zos_global_mean = xr.load_dataset(means_file).zos_global_mean
+#     #full_model_ss.loc[{'var':'zos'}] -= zos_global_mean
+#     full_model_ss = full_model_ss.where(~(full_model_ss['var']=='zos'),full_model_ss-zos_global_mean)
 
-    return full_model_ss
+    # return full_model_ss
+
+
+# def get_MIROC6_025_SMILE_ss():
+
+#     data_name = 'MIROC6'
+    
+#     time_slice = slice('1850','1949')
+
+#     member_names = np.arange(1,51,dtype=int).astype(str)
+#     middle_bit = '_mon_MIROC6_historical_r'
+#     ss = []
+#     var_list = ('tos','zos')
+    
+#     for var in var_list:
+#         filepaths = ['/glade/campaign/cgd/cas/nmaher/miroc6_lens/Omon/'+var+'/'+var+middle_bit+mn+'i1p1f1_g025.nc' for mn in member_names]
+    
+#         ss.append(xr.open_mfdataset(filepaths,
+#                             coords='minimal',
+#                             compat='override',
+#                             combine = 'nested',
+#                             concat_dim = ('SMILE_M'),
+#                             chunks = {'lat':-1,'lon':-1,'time':-1,'SMILE_M':1},
+#                             preprocess = lambda x: x[var].sel(time=time_slice),
+#                            parallel = True))
+    
+    
+#     full_model_ss = xr.concat(ss,'var').assign_coords({'var':np.array(var_list)}).squeeze().assign_coords({'SMILE_M':member_names})
+
+#     means_file = '/glade/work/jjeffree/SMILE_means/'+data_name+'_025.nc'
+#     if not(os.path.isfile(means_file)):
+#         SMILE_means(full_model_ss,means_file) ###
+
+#     #Strip seasonal variability
+#     seasonal_mean = xr.load_dataset(means_file).seasonal_mean
+#     full_model_ss = strip_climatology(full_model_ss,clim=seasonal_mean)
+#     #full_model_ss = full_model_ss.groupby('time.month')-seasonal_mean
+
+#     #Strip global mean
+#     zos_global_mean = xr.load_dataset(means_file).zos_global_mean
+#     #full_model_ss.loc[{'var':'zos'}] -= zos_global_mean
+#     full_model_ss = full_model_ss.where(~(full_model_ss['var']=='zos'),full_model_ss-zos_global_mean)
+
+#     return full_model_ss
 
 def get_model_regrid_025_ss(data_name,
                             location,
@@ -377,6 +377,14 @@ def get_model_regrid_025_ss(data_name,
         if d not in expected_dims:
             full_model_ss = full_model_ss.squeeze(d,drop=True)
     return full_model_ss
+
+get_025_ss['ACCESS-ESM1-5'] = lambda: get_model_regrid_025_ss(data_name='ACCESS-ESM1-5',
+                            location='/glade/campaign/cgd/cas/nmaher/access_lens/Omon/',
+                            time_slice=slice('1850','1949'),
+                            member_names=np.arange(1,41,dtype=int).astype(str),
+                           middle_bit = '_mon_ACCESS-ESM1-5_historical_r',
+                           var_list = ('tos','zos'),
+                           tail = 'i1p1f1_g025.nc')
 
 get_025_ss['MPI-GE'] = lambda: get_model_regrid_025_ss(data_name='MPI-GE',
                             location='/glade/campaign/cgd/cas/nmaher/mpi_lens/Omon/',
