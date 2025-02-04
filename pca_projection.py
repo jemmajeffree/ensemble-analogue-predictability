@@ -87,6 +87,9 @@ if __name__ == "__main__":
     for init_month in args.init_months:
         month_model_ss = model_ss.where(((model_ss['time.month']==init_month)
                                                ),drop=True)#.assign_coords({'nlat':model_ss.nlat,'nlon':model_ss.nlon})
+        if np.prod(month_model_ss.shape)==0:
+            warnings.warn("Skipping month "+str(init_month)+", couldn't find any data")
+            continue
         for m in mask_list:
             trim_model_ss=month_model_ss.where(pt.mask_dict[m],drop=True)
             b = trim_model_ss.stack({'loc':args.space_dims,'time_stack':args.time_dims})

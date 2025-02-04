@@ -107,24 +107,27 @@ def get_CESM2_025_lens_ss():
     ss = []
     var_list = ('tos','zos')
 
+    
+
     for var in var_list:
         filepaths = ['/glade/campaign/cgd/cas/nmaher/cesm2_lens/Omon/'+var+'/'+var+fhof+'i1p1f1_g025.nc' for fhof in first_half_of_filename]
+
+        
 
         ss.append(xr.open_mfdataset(filepaths,
                             coords='minimal',
                             compat='override',
                             combine = 'nested',
                             concat_dim = ('SMILE_M',),
-                            preprocess = lambda x: x[var].sel(time=time_slice),
+                            preprocess = lambda x: x[var], ####
                             chunks={'time':-1,'lat':-1,'lon':-1,'SMILE_M':1},
                            parallel = True))
         
-
-        assert 'CESM' in data_name,"don't correct time if not CESM"
-        ss[-1] = correct_cesm_date(ss[-1])
-        
         if var =='zos':
              ss[-1]= ss[-1]/100 #centimetres
+        assert 'CESM' in data_name,"don't correct time if not CESM"
+        
+        ss[-1] = correct_cesm_date(ss[-1]).sel(time=time_slice) ####
     
     full_model_ss = xr.concat(ss,'var').assign_coords({'var':np.array(var_list)}).squeeze().drop('z_t').assign_coords({'SMILE_M':member_names})
 
@@ -439,10 +442,120 @@ get_025_ss['MPI-CMIP6'] = lambda : get_model_regrid_025_ss(data_name='MPI-CMIP6'
                            middle_bit = '_Omon_MPI-ESM1-2-LR_historical_r',
                            var_list = ('tos','zos'),
                            tail = 'i1p1f1_gn_185001-201412_g025.nc')
+get_025_ss['EC-Earth3_tos'] = lambda: get_model_regrid_025_ss(data_name = 'EC-Earth3',
+                                    location = '/glade/campaign/cgd/cas/nmaher/ec-earth3_lens/Omon/',
+                                    time_slice = slice('1850','1949'),
+                                    member_names = np.concatenate((np.arange(1,5,dtype=int).astype(str),np.arange(6,8,dtype=int).astype(str),np.arange(9,25,dtype=int).astype(str))),
+                                    middle_bit = '_EC-Earth_hist_r',
+                                    var_list = ('tos',),
+                                    tail = 'i1p1f1_185001-201412.nc')
 
-for model_name in ('CESM2-LE_025','ACCESS-ESM1-5','MPI-GE','MIROC6','CanESM5','IPSL-CM6A-L','MIROC-ES2L','GFDL-ES2M','MPI-CMIP6'):
-    get_025_ss[model_name+'_nomean'] = lambda : strip_ensemble_mean(get_025_ss[model_name](),
-                                                                  '/glade/work/jjeffree/SMILE_means/'+model_name+'_ensemble_mean.nc')
+get_025_ss['composite_1'] = lambda: xr.load_dataarray('/glade/work/jjeffree/model_data/composite_1.nc').expand_dims({'SMILE_M':(1,)})
+get_025_ss['composite_2'] = lambda: xr.load_dataarray('/glade/work/jjeffree/model_data/composite_2.nc').expand_dims({'SMILE_M':(1,)})
+get_025_ss['composite_3'] = lambda: xr.load_dataarray('/glade/work/jjeffree/model_data/composite_3.nc').expand_dims({'SMILE_M':(1,)})
+get_025_ss['composite_4'] = lambda: xr.load_dataarray('/glade/work/jjeffree/model_data/composite_4.nc').expand_dims({'SMILE_M':(1,)})
+get_025_ss['composite_5'] = lambda: xr.load_dataarray('/glade/work/jjeffree/model_data/composite_5.nc').expand_dims({'SMILE_M':(1,)})
+
+def get_GFDL_CM2_1_025_ss():
+
+    data_name = 'GFDL-CM2-1'
+
+    tos = xr.open_dataset('/glade/work/jjeffree/model_data/GFDL-CM2-1/cm2-1_pi_tos_025.nc',chunks={'time':1200}).sst
+    zos = xr.open_dataset('/glade/work/jjeffree/model_data/GFDL-CM2-1/cm2-1_pi_zos_025.nc',chunks={'time':1200}).ssh
+    
+    ss = xr.concat((tos,zos),'var').assign_coords({'var':np.array(('tos','zos'))})
+    new_time = ss.time.isel(time=slice(None,1200))
+    full_model_ss = ss.coarsen(time=1200).construct(time=('SMILE_M','time')).assign_coords({'time':new_time,'SMILE_M':np.arange(1,41,dtype=int)})
+    
+    means_file = '/glade/work/jjeffree/SMILE_means/'+data_name+'_025.nc'
+    if not(os.path.isfile(means_file)):
+        SMILE_means(full_model_ss,means_file) ###
+
+    #Strip seasonal variability
+    seasonal_mean = xr.load_dataset(means_file).seasonal_mean
+    full_model_ss = strip_climatology(full_model_ss,clim=seasonal_mean)
+
+    #Strip global mean
+    zos_global_mean = xr.load_dataset(means_file).zos_global_mean
+    full_model_ss = full_model_ss.where(~(full_model_ss['var']=='zos'),full_model_ss-zos_global_mean)
+    
+    expected_dims = ('var','SMILE_M','time','lat','lon')
+    for d in full_model_ss.dims:
+        if d not in expected_dims:
+            full_model_ss = full_model_ss.squeeze(d,drop=True)
+    return full_model_ss
+    
+get_025_ss['GFDL-CM2-1'] = get_GFDL_CM2_1_025_ss
+
+def get_CESM1_pi_025_ss():
+
+    '''Data this reads was generated running the output of these lines:
+    print("module load cdo")
+    print("TARGET_FILE=/glade/campaign/cgd/cas/nmaher/access_lens/Omon/tos/tos_mon_ACCESS-ESM1-5_historical_r10i1p1f1_g025.nc")
+    filenames = glob.glob('/glade/campaign/cesm/collections/cesmLE/CESM-CAM5-BGC-LE/ocn/proc/tseries/monthly/SST/b.e11.B1850C5CN.f09_g16.005*')
+    for f in filenames:
+        print("cdo remapdis,$TARGET_FILE "+f+" "+f.split('/')[-1][:-3]+"_025.nc")
+    filenames = glob.glob('/glade/campaign/cesm/collections/cesmLE/CESM-CAM5-BGC-LE/ocn/proc/tseries/monthly/SSH/b.e11.B1850C5CN.f09_g16.005*')
+    for f in filenames:
+        print("cdo remapdis,$TARGET_FILE "+f+" "+f.split('/')[-1][:-3]+"_025.nc")
+    '''
+
+    data_name = 'CESM1_pi'
+
+    tos = xr.open_mfdataset('/glade/work/jjeffree/model_data/CESM1/*SST*025.nc',chunks={'time':1200}).SST
+    zos = xr.open_mfdataset('/glade/work/jjeffree/model_data/CESM1/*SSH*025.nc',chunks={'time':1200}).SSH
+    
+    ss = xr.concat((tos,zos),'var').assign_coords({'var':np.array(('tos','zos'))})
+    
+    assert 'CESM' in data_name, "Only correct CESM dates"
+    ss = correct_cesm_date(ss)
+    
+    new_time = ss.time.isel(time=slice(None,1200))
+    full_model_ss = ss.coarsen(time=1200,boundary='trim').construct(time=('SMILE_M','time')).assign_coords({'time':new_time,'SMILE_M':np.arange(5,23,dtype=int)})
+    
+    means_file = '/glade/work/jjeffree/SMILE_means/'+data_name+'_025.nc'
+    if not(os.path.isfile(means_file)):
+        SMILE_means(full_model_ss,means_file) ###
+
+    #Strip seasonal variability
+    seasonal_mean = xr.load_dataset(means_file).seasonal_mean
+    full_model_ss = strip_climatology(full_model_ss,clim=seasonal_mean)
+
+    #Strip global mean
+    zos_global_mean = xr.load_dataset(means_file).zos_global_mean
+    full_model_ss = full_model_ss.where(~(full_model_ss['var']=='zos'),full_model_ss-zos_global_mean)
+    
+    expected_dims = ('var','SMILE_M','time','lat','lon')
+    for d in full_model_ss.dims:
+        if d not in expected_dims:
+            full_model_ss = full_model_ss.squeeze(d,drop=True)
+    return full_model_ss
+get_025_ss['CESM1_pi'] = get_CESM1_pi_025_ss
+
+# DO NOT USE A FOR LOOP TO GENERATE THIS KIND OF THING BECAUSE THE 
+# LAMBDAS DON'T RUN (AND USE VARIABLES) UNTIL AFTER THE FOR LOOP AS 
+# EXITED SO THEY ALL USE THE FINAL VALUE FROM THE FOR LOOP
+
+get_025_ss['ACCESS-ESM1-5_nomean'] = lambda : strip_ensemble_mean(get_025_ss['ACCESS-ESM1-5'](),
+'/glade/work/jjeffree/SMILE_means/ACCESS-ESM1-5_ensemble_mean.nc')
+get_025_ss['MPI-GE_nomean'] = lambda : strip_ensemble_mean(get_025_ss['MPI-GE'](),
+'/glade/work/jjeffree/SMILE_means/MPI-GE_ensemble_mean.nc')
+get_025_ss['MIROC6_nomean'] = lambda : strip_ensemble_mean(get_025_ss['MIROC6'](),
+'/glade/work/jjeffree/SMILE_means/MIROC6_ensemble_mean.nc')
+get_025_ss['CanESM5_nomean'] = lambda : strip_ensemble_mean(get_025_ss['CanESM5'](),
+'/glade/work/jjeffree/SMILE_means/CanESM5_ensemble_mean.nc')
+get_025_ss['IPSL-CM6A-L_nomean'] = lambda : strip_ensemble_mean(get_025_ss['IPSL-CM6A-L'](),
+'/glade/work/jjeffree/SMILE_means/IPSL-CM6A-L_ensemble_mean.nc')
+get_025_ss['MIROC-ES2L_nomean'] = lambda : strip_ensemble_mean(get_025_ss['MIROC-ES2L'](),
+'/glade/work/jjeffree/SMILE_means/MIROC-ES2L_ensemble_mean.nc')
+get_025_ss['GFDL-ES2M_nomean'] = lambda : strip_ensemble_mean(get_025_ss['GFDL-ES2M'](),
+'/glade/work/jjeffree/SMILE_means/GFDL-ES2M_ensemble_mean.nc')
+get_025_ss['MPI-CMIP6_nomean'] = lambda : strip_ensemble_mean(get_025_ss['MPI-CMIP6'](),
+'/glade/work/jjeffree/SMILE_means/MPI-CMIP6_ensemble_mean.nc')
+get_025_ss['CESM2-LE_nomean'] = lambda : strip_ensemble_mean(get_025_ss['CESM2-LE_025'](),
+                                                                  '/glade/work/jjeffree/SMILE_means/CESM2_025_ensemble_mean.nc')
+get_025_ss['EC-Earth3_tos_nomean'] = lambda : strip_ensemble_mean(get_025_ss['EC-Earth3_tos'](),
+'/glade/work/jjeffree/SMILE_means/EC-Earth_tos_ensemble_mean.nc')
 # get_025_ss['CanESM5_nomean'] = lambda : strip_ensemble_mean(get_025_ss['CanESM5'](),
 #                                                    '/glade/work/jjeffree/SMILE_means/CanESM5_025_ensemble_mean.nc')
 # get_025_ss['ACCESS-ESM1-5_nomean'] = lambda : strip_ensemble_mean(get_025_ss['ACCESS-ESM1-5'](),
@@ -452,6 +565,7 @@ for model_name in ('CESM2-LE_025','ACCESS-ESM1-5','MPI-GE','MIROC6','CanESM5','I
 
 
 n_ensemble_members = {'CESM2-LE_025':100,
+                      'CESM2-LE':100,
                       'ACCESS-ESM1-5':40,
                       'MPI-GE':100,
                       'MIROC6':50,
@@ -462,10 +576,28 @@ n_ensemble_members = {'CESM2-LE_025':100,
                       'OISST-AVISO':1,
                       'GFDL-ES2M':30,
                       'MPI-CMIP6':50,
+                      'GFDL-CM2-1':40,
+                      'CESM1_pi':18,
+                      'EC-Earth3_tos':22,
+                      'composite_1':1,
+                      'composite_2':1,
+                      'composite_3':1,
+                      'composite_4':1,
+                      'composite_5':1,
 
+                      'CESM2-LE_nomean':100,
                       'ACCESS-ESM1-5_nomean':40,
-                      'CanESM5_nomean':40,
+                      'MPI-GE_nomean':100,
                       'MIROC6_nomean':50,
+                      'CanESM5_nomean':40,
+                      'IPSL-CM6A-L_nomean':32,
+                      'MIROC-ES2L_nomean':30,
+                      'ERSSTv5_nomean':1,
+                      'OISST-AVISO_nomean':1,
+                      'GFDL-ES2M_nomean':30,
+                      'MPI-CMIP6_nomean':50,
+                      'EC-Earth3_tos_nomean':22,
+
 
 }
 

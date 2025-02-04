@@ -20,7 +20,6 @@ import warnings
 import time
 import os
 import sys
-import inspect
 
 from dask.distributed import Client
 
@@ -53,7 +52,7 @@ if __name__ == "__main__":
     print('Model data aquired; '+data_name+"; "+str(time.time()-t0)+' s')
 
     # Calculate index for correlations
-    if inspect.isfunction(args.calc_corr_index) :
+    if type(args.calc_corr_index) == type(np.sum): #Yeah, I'm not happy about type(np.sum) either. We're fishing for "is it a function"
         corr_index = args.calc_corr_index(model_ss)
     else:
         corr_index = args.calc_corr_index
@@ -64,7 +63,7 @@ if __name__ == "__main__":
     for init_month in args.init_months:
         month_model_ss = model_ss.where(model_ss['time.month']==init_month,drop=True).chunk(args.corr_chunks)
         month_corr_index = xr.concat([corr_index.shift(time=-l).where(corr_index['time.month']==init_month,drop=True)
-                                      for l in args.leads],dim='L').assign_coords(L=args.leads).chunk({'L':6})
+                                      for l in args.leads],dim='L').assign_coords(L=args.leads)
 
         with warnings.catch_warnings():
             warnings.simplefilter('once')
@@ -73,6 +72,7 @@ if __name__ == "__main__":
                                   dim=(args.time_dims)).load()
 
         for l in args.leads:
+            #out_folder = args.outfolder_loc+data_name+'_I'+str(init_month)+'_'+args.corr_index_name+'_L'+str(l)
             out_folder = args.weight_folder_name_func(data_name,init_month,l)
             if os.path.isdir(out_folder):
                 if not args.overwrite_correlation:

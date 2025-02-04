@@ -19,14 +19,14 @@ eof_member_trim = lambda x: x.isel(SMILE_M = slice(None,4))
 leads = np.arange(37) #lead time ####np.array((0,6))#
 init_months = np.arange(1,13) #Was 1,13, has been tweaked to finish running the eof script ####np.array((4,10))#
 
-#For the correlations
+# For the correlations
 
 def calc_corr_index(ss):
     return pt.average_region(ss.sel(var='tos'),pt.nino34_region,
                                 lon_coord = 'lon', lat_coord ='lat',lon_dim='lon',lat_dim='lat')
 corr_index_name = 'NINO34'
 
-outfolder_loc = '/glade/derecho/scratch/jjeffree/pca_variations/testing_correlation_weight/' ####
+outfolder_loc = '/glade/derecho/scratch/jjeffree/pca_variations/area_correlation_weight/' ####
 overwrite_correlation = False
 
 corr_chunks = {'var':1,'lon':32}
@@ -56,7 +56,7 @@ pca_step_n = 10 # How many ensemble members are in each pile for the pca analysi
 # Not actually used by pca; used by analogues reading in the pca
 
 
-analogue_output_folder = '/glade/work/jjeffree/results/base/' # Warning: the last folder here is often overwritten by analogue scripts
+analogue_output_folder = '/glade/work/jjeffree/results/area_corr/base' # Warning: the last folder here is often overwritten by analogue scripts
 trim_to_pacific = [False]
 pacific_regrid = [None]
 trim_coords = [{}]
@@ -85,7 +85,7 @@ analogue_time_slice = {'CESM2-LE_025':slice('1855','1945'),
                        'MIROC-ES2L_nomean':slice('1855','1945'),
                        'GFDL-ES2M_nomean':slice('1866','1956'),
                        'MPI-CMIP6_nomean':slice('1855','1945'),
-                       'EC-Earth3_tos':slice('1855','1945'),
+                       'EC-Earth3_tos_nomean':slice('1855','1945'),
 }
 
 lib_dim_chunk_size = 115 #Should be the number of years in a library divided by the number of cores, plus a small buffer

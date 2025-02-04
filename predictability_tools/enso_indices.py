@@ -12,6 +12,10 @@ nino34_region = np.array((190,240,-5,5))
 nino3_region = np.array((210,270,-5,5))
 nino4_region = np.array((160,210,-5,5))
 wholeP_region = np.array((140,280,-5,5))
+tna_region = np.array((360-57.5,360-15,5.5,23.5)) #Copied from https://psl.noaa.gov/data/climateindices/list/
+dmi_e_region = np.array((90,110,-10,0)) #PLEASE DOUBLE CHECK THIS LAST 3
+dmi_w_region = np.array((50,70,-10,10)) #copied from https://psl.noaa.gov/gcos_wgsp/Timeseries/DMI/
+
 pacific_mask = xr.load_dataarray('/'.join(__file__.split('/')[:-2])+'/ocean_basin_mask.nc').sel(region='Pacific Ocean')
 
 '''All of these CESM functions can be generalised for other models, 

@@ -52,7 +52,7 @@ def strip_climatology(ds,
         gb = ds.groupby(time_dim+'.'+seasonal_dim)
         if clim is None:
             clim = gb.mean()
-        return gb - clim
+        return (gb - clim)
 
     return xr.map_blocks(calculate_anomaly,
                          ds.chunk({'time':-1}),

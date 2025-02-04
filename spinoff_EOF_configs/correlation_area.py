@@ -20,6 +20,7 @@ import warnings
 import time
 import os
 import sys
+import inspect
 
 from dask.distributed import Client
 
@@ -52,10 +53,15 @@ if __name__ == "__main__":
     print('Model data aquired; '+data_name+"; "+str(time.time()-t0)+' s')
 
     # Calculate index for correlations
-    if type(args.calc_corr_index) == type(np.sum): #Yeah, I'm not happy about type(np.sum) either. We're fishing for "is it a function"
+    if inspect.isfunction(args.calc_corr_index) :
         corr_index = args.calc_corr_index(model_ss)
     else:
         corr_index = args.calc_corr_index
+
+    # Calculate the coslat area weight bit
+    # This is square rooted because I want the MSE (not RMSE) to be weighted by area
+    # so it'll all get squared before being used
+    area_weights = np.abs(np.cos(np.deg2rad(model_ss.lat)))**0.5
 
     print('Correlation index calculated; '+args.corr_index_name+'; '+str(time.time()-t0)+' s')
     print('Writing to'+ args.outfolder_loc)
@@ -70,6 +76,10 @@ if __name__ == "__main__":
             out = xr.corr(month_corr_index,
                                   month_model_ss,
                                   dim=(args.time_dims)).load()
+
+            # Multiply by area weighting
+            out = out*area_weights
+            
 
         for l in args.leads:
             out_folder = args.weight_folder_name_func(data_name,init_month,l)

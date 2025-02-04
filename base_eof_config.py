@@ -26,7 +26,7 @@ def calc_corr_index(ss):
                                 lon_coord = 'lon', lat_coord ='lat',lon_dim='lon',lat_dim='lat')
 corr_index_name = 'NINO34'
 
-outfolder_loc = '/glade/work/jjeffree/pca_variations/testing_correlation_weight/' ####
+outfolder_loc = '/glade/derecho/scratch/jjeffree/pca_variations/testing_correlation_weight/' ####
 overwrite_correlation = False
 
 corr_chunks = {'var':1,'lon':32}
@@ -55,7 +55,8 @@ space_dims = ('lat','lon','var') # These turn out to be important for before the
 pca_step_n = 10 # How many ensemble members are in each pile for the pca analysis. 
 # Not actually used by pca; used by analogues reading in the pca
 
-analogue_output_folder = '/glade/work/jjeffree/results/base/'
+
+analogue_output_folder = '/glade/work/jjeffree/results/base/' # Warning: the last folder here is often overwritten by analogue scripts
 trim_to_pacific = [False]
 pacific_regrid = [None]
 trim_coords = [{}]
@@ -72,6 +73,19 @@ analogue_time_slice = {'CESM2-LE_025':slice('1855','1945'),
                        'ERSSTv5':slice(None,'2021'),
                        'GFDL-ES2M':slice('1866','1956'),
                        'MPI-CMIP6':slice('1855','1945'),
+                       'GFDL-CM2-1':slice('0005','0095'),
+                       'CESM1_pi':slice('0405','0495'),
+                       
+                       'CESM2-LE_nomean':slice('1855','1945'),
+                       'ACCESS-ESM1-5_nomean':slice('1855','1945'),
+                       'MPI-GE_nomean':slice('1855','1945'),
+                       'MIROC6_nomean':slice('1855','1945'),
+                       'CanESM5_nomean':slice('1855','1945'),
+                       'IPSL-CM6A-L_nomean':slice('1855','1945'),
+                       'MIROC-ES2L_nomean':slice('1855','1945'),
+                       'GFDL-ES2M_nomean':slice('1866','1956'),
+                       'MPI-CMIP6_nomean':slice('1855','1945'),
+                       'EC-Earth3_tos_nomean':slice('1855','1945'),
 }
 
 lib_dim_chunk_size = 115 #Should be the number of years in a library divided by the number of cores, plus a small buffer

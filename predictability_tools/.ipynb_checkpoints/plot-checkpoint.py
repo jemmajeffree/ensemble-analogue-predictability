@@ -273,7 +273,7 @@ def sailboat(skill,
             if np.any(~np.isnan(stat_sig)) and np.any(np.isnan(stat_sig)):
                 add_iso_line(plt.gca(), stat_sig.roll(init_month=-4).T, 0.01,x_shift = 5, y_shift = 0,linekwargs={'colors':'grey','lw':1,}) #I think xshift is 1st month???
         clabel0 = 'r'
-        clabel = '$\Delta$r'
+        clabel = r'$\Delta$r'
 
     elif skill_type=='mse':
         diff_func = lambda x,y: ((y-x)/x)*100
@@ -369,7 +369,7 @@ def incremental_sailboat(skill,
             if np.any(~np.isnan(stat_sig)) and np.any(np.isnan(stat_sig)):
                 add_iso_line(plt.gca(), stat_sig.roll(init_month=-4).T, 0.01,x_shift = 5, y_shift = 0,linekwargs={'colors':'grey','lw':1,}) #I think xshift is 1st month???
         clabel0 = 'r'
-        clabel = '$\Delta$r'
+        clabel = r'$\Delta$r'
 
     elif skill_type=='mse':
         diff_func = lambda x,y: ((y-x)/x)*100
