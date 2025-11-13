@@ -95,4 +95,6 @@ mask_dict['10P_12m2varagreement10-30P'] = mask_dict['10P'] | (corr_agreement.whe
 mask_dict['10P_12m2varagreement30-10P'] = mask_dict['10P'] | (corr_agreement.where(corr_agreement['var']=='tos',0) & mask_dict['30-10P'])
 mask_dict['10P_12m2varagreement30A'] = mask_dict['10P'] | (corr_agreement.where(corr_agreement['var']=='tos',0) & mask_dict['30A'])
 mask_dict['10P_12m2varagreement30I'] = mask_dict['10P'] | (corr_agreement.where(corr_agreement['var']=='tos',0) & mask_dict['30I'])
-
+mask_dict['10P_12m2varagreement30N'] = mask_dict['10P'] | (corr_agreement.where(corr_agreement['var']=='tos',0) & ocean_mask.where(ocean_mask['lat']>30,0))
+mask_dict['10P_12m2varagreement30S'] = mask_dict['10P'] | (corr_agreement.where(corr_agreement['var']=='tos',0) & ocean_mask.where(ocean_mask['lat']<-30,0))
+                                                           

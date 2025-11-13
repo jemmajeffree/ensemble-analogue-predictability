@@ -89,6 +89,7 @@ analogue_time_slice = {'CESM2-LE_025':slice('1855','1945'),
                        'composite_2':slice(None,None),
                        'composite_3':slice(None,None),
                        'composite_4':slice(None,None),
+                       'composite_5':slice(None,None),
                        
                        'CESM2-LE_nomean':slice('1855','1945'),
                        'ACCESS-ESM1-5_nomean':slice('1855','1945'),

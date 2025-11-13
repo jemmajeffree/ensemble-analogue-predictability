@@ -118,7 +118,8 @@ if __name__ == "__main__":
         else:
             obs_pca_names = [data_name+'_'+m]
 
-        out_filename = args.analogue_output_folder[:-5]+'/multiindex/'+'_'.join(data_name_list)+'_'+'_'.join(vars)+'/'+m+'_'+str(lib_mi)+'.nc'
+        #out_filename = args.analogue_output_folder[:-5]+'/multiindex/'+'_'.join(data_name_list)+'_'+'_'.join(vars)+'/'+m+'_'+str(lib_mi)+'.nc' #I'm really sorry Jemma if this doesn't work smoothly, but I can't see what could go wrong and if I screw up it'll throw an error. Line below should do the same thing but more reliably
+        out_filename = '/'.join(args.analogue_output_folder.split('/')[:-2])+'/multiindex/'+'_'.join(data_name_list)+'_'+'_'.join(vars)+'/'+m+'_'+str(lib_mi)+'.nc'
         if not os.path.isdir('/'.join(out_filename.split('/')[:-1])):
             os.mkdir('/'.join(out_filename.split('/')[:-1])) # Should also throw an error if there's any other problems with this directory existing
         if os.path.isfile(out_filename):

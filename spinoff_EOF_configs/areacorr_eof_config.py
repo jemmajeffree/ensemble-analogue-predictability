@@ -56,7 +56,7 @@ pca_step_n = 10 # How many ensemble members are in each pile for the pca analysi
 # Not actually used by pca; used by analogues reading in the pca
 
 
-analogue_output_folder = '/glade/work/jjeffree/results/area_corr/base' # Warning: the last folder here is often overwritten by analogue scripts
+analogue_output_folder = '/glade/work/jjeffree/results/area_corr/base/' # Warning: the last folder here is often overwritten by analogue scripts
 trim_to_pacific = [False]
 pacific_regrid = [None]
 trim_coords = [{}]
