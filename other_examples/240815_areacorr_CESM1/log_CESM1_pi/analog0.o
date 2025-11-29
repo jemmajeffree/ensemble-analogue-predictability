@@ -1,0 +1,11 @@
+Using config from /glade/u/home/jjeffree/ensemble-analogue-predictability/spinoff_EOF_configs/areacorr_eof_config.py
+Lib index calculated; CESM1_pi; 15.108429670333862 s
+Same "truth" data; 15.108443021774292 s
+10P_0.nc 316.2672402858734
+10-30P_0.nc 614.3392746448517
+30-10P_0.nc 906.3894608020782
+10P30A_0.nc 1220.1875312328339
+10P30I_0.nc 1517.515701532364
+10P30N_0.nc 1846.939579486847
+10P30S_0.nc 2178.779144525528
+done

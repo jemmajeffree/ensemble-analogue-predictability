@@ -1,0 +1,10 @@
+Using config from /glade/u/home/jjeffree/ensemble-analogue-predictability/spinoff_EOF_configs/area_weight_eof_config.py
+Lead times: 0
+Init months: 1
+10P_12m2varagreement30A_I1_L0_3.nc 6.1152074337005615
+10P_12m2varagreement30I_I1_L0_3.nc 6.336930274963379
+10P_12m2varagreement30-10P_I1_L0_3.nc 6.555886268615723
+10P_12m2varagreement10-30P_I1_L0_3.nc 6.782299041748047
+10P_12m2varagreement30S_I1_L0_3.nc 7.073929071426392
+10P_12m2varagreement30N_I1_L0_3.nc 7.299238443374634
+done

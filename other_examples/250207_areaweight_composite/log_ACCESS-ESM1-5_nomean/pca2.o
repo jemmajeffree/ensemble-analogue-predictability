@@ -1,0 +1,11 @@
+Using config from /glade/u/home/jjeffree/ensemble-analogue-predictability/spinoff_EOF_configs/area_weight_eof_config.py
+Model data read; 0.053531646728515625 s
+Model data loaded; 0.05567669868469238 s
+Ensemble members slice(0, 0, None)
+Variables ['tos' 'zos']
+1 10P_12m2varagreement30A 0.14468812942504883
+1 10P_12m2varagreement30I 0.20984268188476562
+1 10P_12m2varagreement30-10P 0.2650265693664551
+1 10P_12m2varagreement10-30P 0.3236873149871826
+1 10P_12m2varagreement30S 0.3894357681274414
+1 10P_12m2varagreement30N 0.45383143424987793

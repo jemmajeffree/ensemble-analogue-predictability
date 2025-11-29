@@ -1,0 +1,7 @@
+Using config from /glade/u/home/jjeffree/ensemble-analogue-predictability/spinoff_EOF_configs/areacorr_eof_config.py
+Lib index calculated; CanESM5_nomean; 60.275389194488525 s
+Same "truth" data; 60.27540302276611 s
+30P30A30I_5.nc 662.2134399414062
+10-30P30A30I_5.nc 1267.737555027008
+30-10P30A30I_5.nc 1841.9379560947418
+done

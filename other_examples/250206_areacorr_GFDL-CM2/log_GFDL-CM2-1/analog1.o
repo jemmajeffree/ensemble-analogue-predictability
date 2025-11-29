@@ -1,0 +1,11 @@
+Using config from /glade/u/home/jjeffree/ensemble-analogue-predictability/spinoff_EOF_configs/areacorr_eof_config.py
+Lib index calculated; GFDL-CM2-1; 33.19148230552673 s
+Same "truth" data; 33.1914918422699 s
+10P_1.nc 532.3615560531616
+10-30P_1.nc 1031.9477179050446
+30-10P_1.nc 1535.953096628189
+10P30A_1.nc 2037.4709832668304
+10P30I_1.nc 2539.9735379219055
+10P30N_1.nc 3044.1579225063324
+10P30S_1.nc 3555.63813829422
+done

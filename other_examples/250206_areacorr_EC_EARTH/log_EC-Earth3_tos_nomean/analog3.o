@@ -1,0 +1,11 @@
+Using config from /glade/u/home/jjeffree/ensemble-analogue-predictability/spinoff_EOF_configs/areacorr_eof_config.py
+Lib index calculated; EC-Earth3_tos_nomean; 32.33551287651062 s
+Same "truth" data; 32.33553218841553 s
+10P_3.nc 331.6987178325653
+10-30P_3.nc 633.3410274982452
+30-10P_3.nc 933.9019718170166
+10P30A_3.nc 1236.1628561019897
+10P30I_3.nc 1538.8563854694366
+10P30N_3.nc 1843.6651005744934
+10P30S_3.nc 2148.631363630295
+done
