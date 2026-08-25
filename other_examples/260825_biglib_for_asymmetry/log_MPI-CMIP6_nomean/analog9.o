@@ -1,0 +1,7 @@
+Using config from /glade/u/home/jjeffree/ensemble-analogue-predictability/spinoff_EOF_configs/areacorr_eof_config.py
+Lib index calculated; MPI-CMIP6_nomean; 26.171014547348022 s
+Same "truth" data; 26.171025276184082 s
+30P30A30I_9.nc 621.6827147006989
+10-30P30A30I_9.nc 1221.2806479930878
+30-10P30A30I_9.nc 1823.759950876236
+done

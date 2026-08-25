@@ -1,0 +1,7 @@
+Using config from /glade/u/home/jjeffree/ensemble-analogue-predictability/spinoff_EOF_configs/areacorr_eof_config.py
+Lib index calculated; MIROC6_nomean; 71.96156454086304 s
+Same "truth" data; 71.96157479286194 s
+30P30A30I_2.nc 688.2780611515045
+10-30P30A30I_2.nc 1402.5764119625092
+30-10P30A30I_2.nc 2067.2970225811005
+done

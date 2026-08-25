@@ -1,0 +1,9 @@
+mkdir: cannot create directory ‘log_ACCESS-ESM1-5_nomean’: File exists
+mkdir: cannot create directory ‘log_CESM2-LE_nomean’: File exists
+mkdir: cannot create directory ‘log_CanESM5_nomean’: File exists
+mkdir: cannot create directory ‘log_IPSL-CM6A-L_nomean’: File exists
+mkdir: cannot create directory ‘log_MIROC6_nomean’: File exists
+mkdir: cannot create directory ‘log_GFDL-ES2M_nomean’: File exists
+mkdir: cannot create directory ‘log_MIROC-ES2L_nomean’: File exists
+mkdir: cannot create directory ‘log_MPI-GE_nomean’: File exists
+mkdir: cannot create directory ‘log_MPI-CMIP6_nomean’: File exists

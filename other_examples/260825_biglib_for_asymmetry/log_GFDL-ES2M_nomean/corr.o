@@ -1,0 +1,17 @@
+Using config from /glade/u/home/jjeffree/ensemble-analogue-predictability/spinoff_EOF_configs/areacorr_eof_config.py
+Model data aquired; GFDL-ES2M_nomean; 18.250502824783325 s
+Correlation index calculated; NINO34; 19.46824026107788 s
+Writing to/glade/derecho/scratch/jjeffree/pca_variations/area_correlation_weight/
+Correlation init month  1 40.20592713356018
+Correlation init month  2 60.11862063407898
+Correlation init month  3 81.27239322662354
+Correlation init month  4 101.85429811477661
+Correlation init month  5 121.96708965301514
+Correlation init month  6 142.42747473716736
+Correlation init month  7 162.52903079986572
+Correlation init month  8 182.8357515335083
+Correlation init month  9 202.57566046714783
+Correlation init month  10 222.8539526462555
+Correlation init month  11 242.36454725265503
+Correlation init month  12 262.5161108970642
+Done, 262.516131401062 s

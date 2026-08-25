@@ -1,0 +1,7 @@
+Using config from /glade/u/home/jjeffree/ensemble-analogue-predictability/spinoff_EOF_configs/areacorr_eof_config.py
+Lib index calculated; MPI-GE_nomean; 661.8762185573578 s
+Same "truth" data; 661.8762271404266 s
+30P30A30I_4.nc 1884.5803308486938
+10-30P30A30I_4.nc 3117.9557871818542
+30-10P30A30I_4.nc 4298.5652551651
+done
