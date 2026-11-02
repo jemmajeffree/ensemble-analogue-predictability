@@ -16,7 +16,7 @@
     And to put into a different folder accordingly
     
     branched from analogue_forecasting2 25th Aug 2026
-    to save all analogues and get spread, not just the 
+    to save all analogues and get spread, not just the mean
 '''
 
 
@@ -191,12 +191,13 @@ if __name__ == "__main__":
 
         # Also add start in in case I want it later (25th Aug 2026)
         start = data_index.sel(time=init_ens.pred_time,SMILE_M=out.pred_SMILE_M)
+        print(start.coords)
     
         if 'SMILE_M' in ver.coords:
             ver = ver.drop_vars('SMILE_M')
-        out_data = xr.Dataset({'verification':ver.drop_vars(('time')),
-                               'forecast':an_forecast,
-                              'start':start}
+        out_data = xr.Dataset({'verification':ver.drop_vars(('time','month')),
+                               'forecast':an_forecast.drop_vars(('month')),
+                              'start':start.drop_vars(('month','pred_time','time','SMILE_M'))}
                              ).expand_dims({'mask':(m,),'lib_mi':(lib_mi,)}).drop_vars(('var'))
         
         out_data.to_netcdf(out_filename)

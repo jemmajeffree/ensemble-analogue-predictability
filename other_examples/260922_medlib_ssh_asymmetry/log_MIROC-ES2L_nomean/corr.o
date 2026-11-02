@@ -1,0 +1,6 @@
+Using config from /g/data/x77/jj8842/ensemble-analogue-predictability/spinoff_EOF_configs/areacorr_eof_config_asymmetry2.py
+Model data aquired; MIROC-ES2L_nomean; 194.20824933052063 s
+Correlation index calculated; NINO34; 196.14659023284912 s
+Writing to/scratch/x77/jj8842/analogue_asymmetry2/
+Correlation init month  1 200.71849846839905
+Done, 200.71851253509521 s

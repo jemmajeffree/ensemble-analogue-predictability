@@ -1,18 +1,20 @@
 #!/bin/bash -l
 #PBS -N correlation
-#PBS -A UNOA0008
-#PBS -l select=1:ncpus=4:mpiprocs=1:mem=40GB:ompthreads=1
-#PBS -l place=scatter
+#PBS -P x77
+#PBS -q normalbw 
+#PBS -l mem=63gb 
+#PBS -l ncpus=14
+#PBS -l jobfs=10gb
 #PBS -l walltime=00:30:00
-#PBS -q casper
+#PBS -l storage=gdata/x77+gdata/xp65+scratch/x77+gdata/su28
 #PBS -o corr.o
 #PBS -e corr.e
 
-module load conda
-conda activate jj_default2
+module use /g/data3/xp65/public/modules
+module load conda/analysis3
 
-SCRIPT_NAME="/glade/u/home/jjeffree/ensemble-analogue-predictability/spinoff_EOF_configs/correlation_area.py"
-CONFIG_FILE="/glade/u/home/jjeffree/ensemble-analogue-predictability/spinoff_EOF_configs/areacorr_eof_config.py"
+SCRIPT_NAME="/g/data/x77/jj8842/ensemble-analogue-predictability/spinoff_EOF_configs/correlation_area.py"
+CONFIG_FILE="/g/data/x77/jj8842/ensemble-analogue-predictability/spinoff_EOF_configs/areacorr_eof_config_asymmetry.py"
 
 mkdir 'log_'$MODEL_NAME
 

@@ -1,0 +1,12 @@
+
+======================================================================================
+                  Resource Usage on 2026-09-28 12:43:01:
+   Job Id:             180009480[1].gadi-pbs
+   Project:            lg87
+   Exit Status:        0
+   Service Units:      5.15
+   NCPUs Requested:    28                  CPU Time Used: 00:46:42        
+   Memory Requested:   126.0GB               Memory Used: 63.97GB         
+   Walltime Requested: 06:00:00            Walltime Used: 00:08:50        
+   JobFS Requested:    10.0GB                 JobFS Used: 1.05KB          
+======================================================================================

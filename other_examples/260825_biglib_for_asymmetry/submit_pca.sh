@@ -1,22 +1,25 @@
 #!/bin/bash -l
 #PBS -N pca
-#PBS -A UNOA0008
-#PBS -l select=1:ncpus=4:mpiprocs=1:mem=40GB:ompthreads=1
-#PBS -l place=scatter
+#PBS -P x77
+#PBS -q normalbw 
+#PBS -l mem=63gb 
+#PBS -l ncpus=14
+#PBS -l jobfs=10gb
 #PBS -l walltime=04:00:00
-#PBS -q casper
+#PBS -l storage=gdata/x77+gdata/xp65+scratch/x77+gdata/su28
 #PBS -o pca.o
 #PBS -e pca.e
 # One job for each 10 ensemble members seems to work best (ACCESS has 40, index is the start)
 #PBS -J 0-90:10
 
-module load conda
-conda activate jj_default2
+module use /g/data3/xp65/public/modules
+module load conda/analysis3
+cd /g/data/x77/jj8842/ensemble-analogue-predictability/other_examples/260825_biglib_for_asymmetry/
 
-SCRIPT_NAME="/glade/u/home/jjeffree/ensemble-analogue-predictability/pca_projection.py"
-CONFIG_FILE="/glade/u/home/jjeffree/ensemble-analogue-predictability/spinoff_EOF_configs/areacorr_eof_config.py"
-#MASK_LIST="10P,10P30A,10P30I,10-30P,30-10P,30P,30P30A,30P30I,60P,10P30N,10P30S"
-MASK_LIST="30P30A30I,10-30P30A30I,30-10P30A30I"
+SCRIPT_NAME="/g/data/x77/jj8842/ensemble-analogue-predictability/pca_projection.py"
+CONFIG_FILE="/g/data/x77/jj8842/ensemble-analogue-predictability/spinoff_EOF_configs/areacorr_eof_config_asymmetry.py"
+
+MASK_LIST="30P30A30I"
 VAR="tos,zos"
 
 python $SCRIPT_NAME $CONFIG_FILE $MODEL_NAME $MASK_LIST $VAR $PBS_ARRAY_INDEX $(($PBS_ARRAY_INDEX+10)) 1> log_$MODEL_NAME/$PBS_ARRAY_INDEX'pca.o' 2> log_$MODEL_NAME/$PBS_ARRAY_INDEX'pca.e'

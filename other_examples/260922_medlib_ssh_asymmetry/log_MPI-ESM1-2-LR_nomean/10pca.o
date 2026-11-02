@@ -1,0 +1,6 @@
+Using config from /g/data/x77/jj8842/ensemble-analogue-predictability/spinoff_EOF_configs/areacorr_eof_config_asymmetry2.py
+Model data read; 191.17361330986023 s
+Model data loaded; 198.0567750930786 s
+Ensemble members slice(10, 20, None)
+Variables ['tos' 'zos']
+1 30P30A30I 202.48520183563232

@@ -1,0 +1,12 @@
+
+======================================================================================
+                  Resource Usage on 2026-09-22 16:34:45:
+   Job Id:             179584639[60].gadi-pbs
+   Project:            g40
+   Exit Status:        0
+   Service Units:      2.16
+   NCPUs Requested:    14                  CPU Time Used: 00:20:32        
+   Memory Requested:   63.0GB                Memory Used: 38.19GB         
+   Walltime Requested: 04:00:00            Walltime Used: 00:07:24        
+   JobFS Requested:    10.0GB                 JobFS Used: 555.0B          
+======================================================================================

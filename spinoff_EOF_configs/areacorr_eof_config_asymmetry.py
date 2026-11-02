@@ -56,12 +56,12 @@ pca_step_n = 10 # How many ensemble members are in each pile for the pca analysi
 # Not actually used by pca; used by analogues reading in the pca
 
 
-analogue_output_folder = '/glade/work/jjeffree/results/area_corr/base/' # Warning: the last folder here is often overwritten by analogue scripts
+analogue_output_folder = '/scratch/x77/jj8842/analogue_asymmetry/output/base/' # Warning: the last folder here is often overwritten by analogue scripts
 trim_to_pacific = [False]
 pacific_regrid = [None]
 trim_coords = [{}]
 n_analogues= 15
-lib_size=5 #In ensemble members
+lib_size=40 #In ensemble members
 
 analogue_time_slice = {'CESM2-LE_025':slice('1855','1945'),
                        'ACCESS-ESM1-5':slice('1855','1945'),

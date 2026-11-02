@@ -1,7 +1,13 @@
-Using config from /glade/u/home/jjeffree/ensemble-analogue-predictability/spinoff_EOF_configs/areacorr_eof_config.py
-Lib index calculated; MIROC6_nomean; 66.17541289329529 s
-Same "truth" data; 66.17542052268982 s
-30P30A30I_0.nc 690.7640855312347
-10-30P30A30I_0.nc 1588.4852643013
-30-10P30A30I_0.nc 2229.521535396576
+Using config from /g/data/x77/jj8842/ensemble-analogue-predictability/spinoff_EOF_configs/areacorr_eof_config_asymmetry.py
+Lib index calculated; MIROC6_nomean; 90.92224597930908 s
+Same "truth" data; 90.92226052284241 s
+Coordinates:
+  * index_lon     (index_lon) <U6 72B 'nino3' 'nino34' 'nino4'
+  * pred_SMILE_M  (pred_SMILE_M) <U2 400B '1' '2' '3' '4' ... '48' '49' '50'
+    SMILE_M       (pred_SMILE_M) <U21 4kB '1' '2' '3' '4' ... '48' '49' '50'
+    time          (Y) datetime64[ns] 728B 1855-01-16T12:00:00 ... 1945-01-16T...
+    month         (Y) int64 728B 1 1 1 1 1 1 1 1 1 1 1 ... 1 1 1 1 1 1 1 1 1 1 1
+    pred_time     (Y) datetime64[ns] 728B 1855-01-16T12:00:00 ... 1945-01-16T...
+    var           <U3 12B 'tos'
+30P30A30I_0.nc 135.38582968711853
 done

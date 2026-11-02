@@ -2,7 +2,7 @@ import xarray as xr
 import numpy as np
 
 # Develop the set of masks we'll be using here
-full_mask = xr.open_dataarray('/glade/u/home/jjeffree/ensemble-analogue-predictability/ocean_basin_mask_g025.nc')
+full_mask = xr.open_dataarray('/g/data/x77/jj8842/ensemble-analogue-predictability/ocean_basin_mask_g025.nc')
 
 atlantic_mask = full_mask.sel(region='Atlantic Ocean').astype(bool).drop_vars('region')
 pacific_mask = full_mask.sel(region='Pacific Ocean').astype(bool).drop_vars('region')
@@ -87,14 +87,14 @@ mask_dict['30PW7530I'] = pacific_mask.where(np.abs(pacific_mask['lat'])<30,0) | 
 mask_dict['30PE7530I'] = pacific_mask.where(np.abs(pacific_mask['lat'])<30,0) | (indian_mask.where(np.abs(indian_mask['lat'])<30,0) & indian_mask.where(indian_mask['lon']>75,0))
 mask_dict['30PTNA'] = pacific_mask.where(np.abs(pacific_mask['lat'])<30,0) | (ocean_mask.where(ocean_mask['lat']>5,0) & ocean_mask.where(ocean_mask['lat']<25,0) & ocean_mask.where(ocean_mask['lon']>305,0) & ocean_mask.where(ocean_mask['lon']<345,0))
 
-#Masking out regions where the correlations don't agree, for composite studies
-corr_agreement = xr.load_dataarray('/glade/u/home/jjeffree/ensemble-analogue-predictability/I0_L12_multimodel_corr_agreement.nc')
-mask_dict['30P_12m2varagreement30A'] = mask_dict['30P'] | (corr_agreement.where(corr_agreement['var']=='tos',0) & mask_dict['30P30A'])
-mask_dict['30P_12m2varagreement30I'] = mask_dict['30P'] | (corr_agreement.where(corr_agreement['var']=='tos',0) & mask_dict['30P30I'])
-mask_dict['10P_12m2varagreement10-30P'] = mask_dict['10P'] | (corr_agreement.where(corr_agreement['var']=='tos',0) & mask_dict['10-30P'])
-mask_dict['10P_12m2varagreement30-10P'] = mask_dict['10P'] | (corr_agreement.where(corr_agreement['var']=='tos',0) & mask_dict['30-10P'])
-mask_dict['10P_12m2varagreement30A'] = mask_dict['10P'] | (corr_agreement.where(corr_agreement['var']=='tos',0) & mask_dict['30A'])
-mask_dict['10P_12m2varagreement30I'] = mask_dict['10P'] | (corr_agreement.where(corr_agreement['var']=='tos',0) & mask_dict['30I'])
-mask_dict['10P_12m2varagreement30N'] = mask_dict['10P'] | (corr_agreement.where(corr_agreement['var']=='tos',0) & ocean_mask.where(ocean_mask['lat']>30,0))
-mask_dict['10P_12m2varagreement30S'] = mask_dict['10P'] | (corr_agreement.where(corr_agreement['var']=='tos',0) & ocean_mask.where(ocean_mask['lat']<-30,0))
+# #Masking out regions where the correlations don't agree, for composite studies
+# corr_agreement = xr.load_dataarray('/glade/u/home/jjeffree/ensemble-analogue-predictability/I0_L12_multimodel_corr_agreement.nc')
+# mask_dict['30P_12m2varagreement30A'] = mask_dict['30P'] | (corr_agreement.where(corr_agreement['var']=='tos',0) & mask_dict['30P30A'])
+# mask_dict['30P_12m2varagreement30I'] = mask_dict['30P'] | (corr_agreement.where(corr_agreement['var']=='tos',0) & mask_dict['30P30I'])
+# mask_dict['10P_12m2varagreement10-30P'] = mask_dict['10P'] | (corr_agreement.where(corr_agreement['var']=='tos',0) & mask_dict['10-30P'])
+# mask_dict['10P_12m2varagreement30-10P'] = mask_dict['10P'] | (corr_agreement.where(corr_agreement['var']=='tos',0) & mask_dict['30-10P'])
+# mask_dict['10P_12m2varagreement30A'] = mask_dict['10P'] | (corr_agreement.where(corr_agreement['var']=='tos',0) & mask_dict['30A'])
+# mask_dict['10P_12m2varagreement30I'] = mask_dict['10P'] | (corr_agreement.where(corr_agreement['var']=='tos',0) & mask_dict['30I'])
+# mask_dict['10P_12m2varagreement30N'] = mask_dict['10P'] | (corr_agreement.where(corr_agreement['var']=='tos',0) & ocean_mask.where(ocean_mask['lat']>30,0))
+# mask_dict['10P_12m2varagreement30S'] = mask_dict['10P'] | (corr_agreement.where(corr_agreement['var']=='tos',0) & ocean_mask.where(ocean_mask['lat']<-30,0))
                                                            

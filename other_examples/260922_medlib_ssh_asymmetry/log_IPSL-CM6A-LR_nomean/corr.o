@@ -1,0 +1,11 @@
+Using config from /g/data/x77/jj8842/ensemble-analogue-predictability/spinoff_EOF_configs/areacorr_eof_config_asymmetry2.py
+Model data aquired; IPSL-CM6A-LR_nomean; 259.276709318161 s
+Correlation index calculated; NINO34; 260.88036131858826 s
+Writing to/scratch/x77/jj8842/analogue_asymmetry2/
+skipping l=1 init=1
+skipping l=3 init=1
+skipping l=6 init=1
+skipping l=12 init=1
+skipping l=24 init=1
+Correlation init month  1 264.9187128543854
+Done, 264.9187214374542 s

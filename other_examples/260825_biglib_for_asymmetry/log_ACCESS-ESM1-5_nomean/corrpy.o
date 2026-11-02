@@ -1,0 +1,6 @@
+Using config from /g/data/x77/jj8842/ensemble-analogue-predictability/spinoff_EOF_configs/areacorr_eof_config_asymmetry.py
+Model data aquired; ACCESS-ESM1-5_nomean; 579.2211346626282 s
+Correlation index calculated; NINO34; 590.7683238983154 s
+Writing to/scratch/x77/jj8842/analogue_asymmetry/
+Correlation init month  1 641.3651070594788
+Done, 641.3651449680328 s

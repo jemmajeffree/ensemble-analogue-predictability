@@ -1,0 +1,14 @@
+CanESM5_nomean
+eof: 
+
+======================================================================================
+                  Resource Usage on 2026-08-25 17:10:24:
+   Job Id:             177377629.gadi-pbs
+   Project:            x77
+   Exit Status:        0
+   Service Units:      0.00
+   NCPUs Requested:    1                   CPU Time Used: 00:00:00        
+   Memory Requested:   500.0MB               Memory Used: 7.2MB           
+   Walltime Requested: 10:00:00            Walltime Used: 00:00:01        
+   JobFS Requested:    100.0MB                JobFS Used: 0B              
+======================================================================================

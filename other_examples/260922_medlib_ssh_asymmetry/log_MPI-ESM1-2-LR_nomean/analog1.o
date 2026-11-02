@@ -1,0 +1,13 @@
+Using config from /g/data/x77/jj8842/ensemble-analogue-predictability/spinoff_EOF_configs/areacorr_eof_config_asymmetry2.py
+Lib index calculated; MPI-ESM1-2-LR_nomean; 282.92217540740967 s
+Same "truth" data; 282.9222004413605 s
+Coordinates:
+  * index_lon     (index_lon) <U6 72B 'nino3' 'nino34' 'nino4'
+  * pred_SMILE_M  (pred_SMILE_M) <U2 400B '1' '2' '3' '4' ... '48' '49' '50'
+    SMILE_M       (pred_SMILE_M) <U21 4kB '1' '2' '3' '4' ... '48' '49' '50'
+    time          (Y) datetime64[ns] 728B 1855-01-16T12:00:00 ... 1945-01-16T...
+    month         (Y) int64 728B 1 1 1 1 1 1 1 1 1 1 1 ... 1 1 1 1 1 1 1 1 1 1 1
+    pred_time     (Y) datetime64[ns] 728B 1855-01-16T12:00:00 ... 1945-01-16T...
+    var           <U3 12B 'tos'
+30P30A30I_1.nc 300.067321062088
+done

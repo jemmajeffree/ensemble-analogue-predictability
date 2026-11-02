@@ -34,7 +34,7 @@ if __name__ == "__main__":
     
     import importlib.util
     
-    sys.path.append('/glade/u/home/jjeffree/ensemble-analogue-predictability/')
+    sys.path.append('/g/data/x77/jj8842/ensemble-analogue-predictability/')
     import predictability_tools as pt
 
     # Config file - so I can run variants if necessary
